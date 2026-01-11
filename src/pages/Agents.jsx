@@ -1,41 +1,53 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState } from "react"
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
-const API_TOKEN = import.meta.env.VITE_API_TOKEN;
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
+const API_TOKEN = import.meta.env.VITE_API_TOKEN
 
 export default function Agents() {
-  const [agents, setAgents] = useState([]);
-  const [editingId, setEditingId] = useState(null);
+  const [agents, setAgents] = useState([])
+  const [editingId, setEditingId] = useState(null)
+
   const [editForm, setEditForm] = useState({
     Provider: "",
     Secret: "",
-  });
+  })
 
+  const [creating, setCreating] = useState(false)
+  const [createForm, setCreateForm] = useState({
+    Provider: "",
+    Secret: "",
+  })
+
+  // ======================
   // Load agents
+  // ======================
   useEffect(() => {
-    loadAgents();
-  }, []);
+    loadAgents()
+  }, [])
 
   const loadAgents = async () => {
     const res = await fetch(`${API_BASE_URL}/agents`, {
       headers: {
         Authorization: `Bearer ${API_TOKEN}`,
       },
-    });
-    setAgents(await res.json());
-  };
+    })
+    setAgents(await res.json())
+  }
 
+  // ======================
+  // Edit
+  // ======================
   const startEdit = (agent) => {
-    setEditingId(agent.ID);
+    setEditingId(agent.ID)
     setEditForm({
       Provider: agent.Provider || "",
       Secret: agent.Secret || "",
-    });
-  };
+    })
+  }
 
   const cancelEdit = () => {
-    setEditingId(null);
-  };
+    setEditingId(null)
+  }
 
   const saveEdit = async (id) => {
     await fetch(`${API_BASE_URL}/agents/${id}`, {
@@ -45,35 +57,112 @@ export default function Agents() {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        ID: id,
         Provider: editForm.Provider,
         Secret: editForm.Secret,
       }),
-    });
+    })
 
-    await loadAgents();
-    setEditingId(null);
-  };
+    await loadAgents()
+    setEditingId(null)
+  }
 
+  // ======================
+  // Create
+  // ======================
+  const startCreate = () => {
+    setCreating(true)
+    setCreateForm({ Provider: "", Secret: "" })
+  }
+
+  const cancelCreate = () => {
+    setCreating(false)
+  }
+
+  const saveCreate = async () => {
+    if (!createForm.Provider) return
+
+    await fetch(`${API_BASE_URL}/agents`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${API_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        Provider: createForm.Provider,
+        Secret: createForm.Secret,
+      }),
+    })
+
+    await loadAgents()
+    setCreating(false)
+  }
+
+  // ======================
+  // Delete
+  // ======================
   const deleteAgent = async (id) => {
-    const ok = window.confirm("Delete this agent?");
-    if (!ok) return;
+    const ok = window.confirm("Delete this agent?")
+    if (!ok) return
 
     await fetch(`${API_BASE_URL}/agents/${id}`, {
       method: "DELETE",
       headers: {
         Authorization: `Bearer ${API_TOKEN}`,
       },
-    });
+    })
 
-    // optimistic update
-    setAgents((prev) => prev.filter((a) => a.ID !== id));
-  };
+    setAgents((prev) => prev.filter((a) => a.ID !== id))
+  }
 
   return (
     <div>
-      <h1>Agents</h1>
+      {/* ====================== */}
+      {/* Header */}
+      {/* ====================== */}
+      <h1 className="page-header">
+        Agents
+        {!creating && (
+          <button onClick={startCreate} className="btn-primary">
+            + Add agent
+          </button>
+        )}
+      </h1>
 
+      {/* ====================== */}
+      {/* Create form */}
+      {/* ====================== */}
+      {creating && (
+        <div className="editor" style={{ marginBottom: "1rem" }}>
+          <label>Provider</label>
+          <input
+            value={createForm.Provider}
+            onChange={(e) =>
+              setCreateForm({ ...createForm, Provider: e.target.value })
+            }
+          />
+
+          <label>Secret</label>
+          <input
+            value={createForm.Secret}
+            onChange={(e) =>
+              setCreateForm({ ...createForm, Secret: e.target.value })
+            }
+          />
+
+          <div>
+            <button onClick={saveCreate} className="btn-icon success">
+              ✔️ Save
+            </button>
+            <button onClick={cancelCreate} className="btn-icon">
+              ✖️ Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ====================== */}
+      {/* Table */}
+      {/* ====================== */}
       <table className="table">
         <thead>
           <tr>
@@ -86,7 +175,7 @@ export default function Agents() {
 
         <tbody>
           {agents.map((a) => {
-            const editing = editingId === a.ID;
+            const editing = editingId === a.ID
 
             return (
               <tr key={a.ID} className={editing ? "active" : ""}>
@@ -131,7 +220,7 @@ export default function Agents() {
                     <>
                       <button
                         onClick={() => startEdit(a)}
-                        style={iconButton}
+                        className="btn-icon"
                         title="Edit"
                       >
                         ✏️
@@ -139,7 +228,7 @@ export default function Agents() {
 
                       <button
                         onClick={() => deleteAgent(a.ID)}
-                        style={{ ...iconButton, color: "#d33" }}
+                        className="btn-icon danger"
                         title="Delete"
                       >
                         🗑️
@@ -149,7 +238,7 @@ export default function Agents() {
                     <>
                       <button
                         onClick={() => saveEdit(a.ID)}
-                        style={iconButton}
+                        className="btn-icon success"
                         title="Save"
                       >
                         ✔️
@@ -157,7 +246,7 @@ export default function Agents() {
 
                       <button
                         onClick={cancelEdit}
-                        style={iconButton}
+                        className="btn-icon"
                         title="Cancel"
                       >
                         ✖️
@@ -166,18 +255,10 @@ export default function Agents() {
                   )}
                 </td>
               </tr>
-            );
+            )
           })}
         </tbody>
       </table>
     </div>
-  );
+  )
 }
-
-const iconButton = {
-  background: "none",
-  border: "none",
-  cursor: "pointer",
-  fontSize: "1rem",
-  marginRight: "4px",
-};
