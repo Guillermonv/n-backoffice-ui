@@ -119,14 +119,17 @@ export default function Agents() {
       {/* ====================== */}
       {/* Header */}
       {/* ====================== */}
-      <h1 className="page-header">
-        Agents
-        {!creating && (
-          <button onClick={startCreate} className="btn-primary">
-            + Add agent
-          </button>
-        )}
-      </h1>
+      <div className="page-header">
+  <h1>Agents</h1>
+  {!creating && (
+    <button onClick={startCreate} className="btn-primary">
+      + Add agent
+    </button>
+    
+  )}
+<br></br><br></br>
+
+</div>
 
       {/* ====================== */}
       {/* Create form */}
