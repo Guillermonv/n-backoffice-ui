@@ -6,8 +6,9 @@ export default function Sidebar() {
     <aside className="sidebar">
       <h2>Admin</h2>
       <NavLink to="/" end>Home</NavLink>
-      <NavLink to="/steps">Steps</NavLink>
+      <NavLink to="/workflows">Workflows</NavLink>
       <NavLink to="/agents">Agents</NavLink>
+      <NavLink to="/steps">Steps</NavLink>
     </aside>
   )
 }

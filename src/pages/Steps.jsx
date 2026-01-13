@@ -6,6 +6,7 @@ const TOKEN = import.meta.env.VITE_API_TOKEN
 export default function Steps() {
   const [steps, setSteps] = useState([])
   const [agents, setAgents] = useState([])
+  const [workflows, setWorkflows] = useState([])
 
   const [workflowFilter, setWorkflowFilter] = useState("all")
 
@@ -18,65 +19,91 @@ export default function Steps() {
     orderIndex: 1,
     operationType: "AI_CLIENT_CALL",
     workflowId: "",
-    agentId: ""
+    agentId: "",
+    prompt: ""
   })
 
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState(null)
 
-  // ======================
-  // Load data
-  // ======================
+  /* ======================
+     Column widths
+  ====================== */
+  const [columnWidths, setColumnWidths] = useState({
+    id: 80,
+    name: 180,
+    operationType: 220,
+    order: 100,
+    agent: 160,
+    workflow: 260,
+    actions: 80
+  })
+
+  /* ======================
+     Resize handler
+  ====================== */
+  const startResize = (key, startX) => {
+    const startWidth = columnWidths[key]
+
+    const onMouseMove = e => {
+      const newWidth = Math.max(60, startWidth + (e.clientX - startX))
+      setColumnWidths(w => ({ ...w, [key]: newWidth }))
+    }
+
+    const onMouseUp = () => {
+      window.removeEventListener("mousemove", onMouseMove)
+      window.removeEventListener("mouseup", onMouseUp)
+    }
+
+    window.addEventListener("mousemove", onMouseMove)
+    window.addEventListener("mouseup", onMouseUp)
+  }
+
+  /* ======================
+     LOADERS
+  ====================== */
+  const loadSteps = async () => {
+    const res = await fetch(`${API}/steps`, {
+      headers: { Authorization: `Bearer ${TOKEN}` }
+    })
+    setSteps(await res.json())
+  }
+
+  const loadStepsByWorkflow = async workflowId => {
+    const res = await fetch(`${API}/steps/by-workflow/${workflowId}`, {
+      headers: { Authorization: `Bearer ${TOKEN}` }
+    })
+    setSteps(await res.json())
+  }
+
   const loadAll = async () => {
-    const [stepsRes, agentsRes] = await Promise.all([
-      fetch(`${API}/steps`, {
+    const [agentsRes, workflowsRes] = await Promise.all([
+      fetch(`${API}/agents`, {
         headers: { Authorization: `Bearer ${TOKEN}` }
       }),
-      fetch(`${API}/agents`, {
+      fetch(`${API}/workflows`, {
         headers: { Authorization: `Bearer ${TOKEN}` }
       })
     ])
 
-    const stepsData = await stepsRes.json()
-    const agentsData = await agentsRes.json()
-
-    setSteps(stepsData)
     setAgents(
-      agentsData.map(a => ({
+      (await agentsRes.json()).map(a => ({
         id: a.ID,
         provider: a.Provider
       }))
     )
+
+    setWorkflows(await workflowsRes.json())
+    await loadSteps()
   }
 
   useEffect(() => {
     loadAll()
   }, [])
 
-  // ======================
-  // Workflows dropdown
-  // ======================
-  const workflows = useMemo(() => {
-    const map = new Map()
-    steps.forEach(s => {
-      if (s.workflow) {
-        map.set(s.workflow.id, s.workflow.name)
-      }
-    })
-    return Array.from(map.entries()).map(([id, name]) => ({ id, name }))
-  }, [steps])
-
-  // ======================
-  // Filtered steps
-  // ======================
-  const filteredSteps = useMemo(() => {
-    if (workflowFilter === "all") return steps
-    return steps.filter(s => s.workflow?.id === Number(workflowFilter))
-  }, [steps, workflowFilter])
-
-  // ======================
-  // Create
-  // ======================
+  /* ======================
+     CREATE
+  ====================== */
   const createStep = async () => {
     setError(null)
 
@@ -98,7 +125,8 @@ export default function Steps() {
         WorkflowID: Number(createForm.workflowId),
         AgentID: createForm.agentId
           ? Number(createForm.agentId)
-          : null
+          : null,
+        Prompt: createForm.prompt
       })
     })
 
@@ -114,14 +142,18 @@ export default function Steps() {
       orderIndex: 1,
       operationType: "AI_CLIENT_CALL",
       workflowId: "",
-      agentId: ""
+      agentId: "",
+      prompt: ""
     })
-    loadAll()
+
+    workflowFilter === "all"
+      ? loadSteps()
+      : loadStepsByWorkflow(workflowFilter)
   }
 
-  // ======================
-  // Update
-  // ======================
+  /* ======================
+     UPDATE
+  ====================== */
   const save = async () => {
     setError(null)
 
@@ -136,7 +168,9 @@ export default function Steps() {
         orderIndex: selected.orderIndex,
         operationType: selected.operationType,
         workflowId: selected.workflow.id,
-        agentId: selectedAgentId ? Number(selectedAgentId) : null,
+        agentId: selectedAgentId
+          ? Number(selectedAgentId)
+          : null,
         prompt: selected.prompt
       })
     })
@@ -149,12 +183,15 @@ export default function Steps() {
 
     setSaved(true)
     setTimeout(() => setSaved(false), 1200)
-    loadAll()
+
+    workflowFilter === "all"
+      ? loadSteps()
+      : loadStepsByWorkflow(workflowFilter)
   }
 
-  // ======================
-  // Delete
-  // ======================
+  /* ======================
+     DELETE
+  ====================== */
   const deleteStep = async id => {
     if (!window.confirm("Delete this step?")) return
 
@@ -164,16 +201,20 @@ export default function Steps() {
     })
 
     setSelected(null)
-    loadAll()
+
+    workflowFilter === "all"
+      ? loadSteps()
+      : loadStepsByWorkflow(workflowFilter)
   }
 
+  /* ======================
+     RENDER
+  ====================== */
   return (
     <div className="steps-page">
       <h1>Steps</h1>
 
-      {/* ====================== */}
       {/* Header */}
-      {/* ====================== */}
       <div className="steps-header">
         <div className="steps-header-left">
           <button
@@ -185,26 +226,30 @@ export default function Steps() {
         </div>
 
         <div className="steps-header-center">
-        <select
-          className="select-primary"
-          value={workflowFilter}
-          onChange={e => setWorkflowFilter(e.target.value)}
-        >
-          <option value="all">All workflows</option>
-          {workflows.map(w => (
-            <option key={w.id} value={w.id}>
-              {w.name}
-            </option>
-          ))}
-        </select>
+          <select
+            className="select-primary"
+            value={workflowFilter}
+            onChange={async e => {
+              const value = e.target.value
+              setWorkflowFilter(value)
+              value === "all"
+                ? await loadSteps()
+                : await loadStepsByWorkflow(value)
+            }}
+          >
+            <option value="all">All workflows</option>
+            {workflows.map(w => (
+              <option key={w.ID} value={w.ID}>
+                {w.Name}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="steps-header-right" />
       </div>
 
-      {/* ====================== */}
       {/* Create */}
-      {/* ====================== */}
       {showCreate && (
         <section className="editor">
           <h3>Create Step</h3>
@@ -254,8 +299,8 @@ export default function Steps() {
           >
             <option value="">Select workflow</option>
             {workflows.map(w => (
-              <option key={w.id} value={w.id}>
-                {w.name}
+              <option key={w.ID} value={w.ID}>
+                {w.Name}
               </option>
             ))}
           </select>
@@ -278,73 +323,85 @@ export default function Steps() {
             ))}
           </select>
 
+          <label>Prompt</label>
+          <textarea
+            rows="6"
+            value={createForm.prompt}
+            onChange={e =>
+              setCreateForm({ ...createForm, prompt: e.target.value })
+            }
+          />
+
           <button className="btn-primary" onClick={createStep}>
             Create
           </button>
         </section>
       )}
 
-      {/* ====================== */}
       {/* Table */}
-      {/* ====================== */}
       <table className="table">
-      <thead>
+        <thead>
           <tr>
-            <th className="col-id">ID</th>
-            <th>Name</th>
-            <th>Workflow</th> {/* 👈 nueva */}
-            <th className="col-order">Order</th>
-            <th>Agent</th>
-            <th className="col-order">Actions</th>
+            {[
+              ["id", "ID"],
+              ["name", "Name"],
+              ["operationType", "Operation Type"],
+              ["order", "Order"],
+              ["agent", "Agent"],
+              ["workflow", "Workflow"],
+              ["actions", "Actions"]
+            ].map(([key, label]) => (
+              <th key={key} style={{ width: columnWidths[key] }}>
+                {label}
+                <span
+                  className="col-resizer"
+                  onMouseDown={e => startResize(key, e.clientX)}
+                />
+              </th>
+            ))}
           </tr>
         </thead>
 
-            <tbody>
-      {filteredSteps.map(s => (
-        <tr
-          key={s.id}
-          className={selected?.id === s.id ? "active" : ""}
-          onClick={() => {
-            setSelected({ ...s })
-            setSelectedAgentId(
-              s.agent?.id ? String(s.agent.id) : ""
-            )
-            setError(null)
-          }}
-        >
-          <td>{s.id}</td>
-          <td>{s.name}</td>
-
-          {/* 👇 NUEVA COLUMNA */}
-          <td>
-            <span className="badge-workflow">
-              {s.workflow?.name || "-"}
-            </span>
-          </td>
-
-          <td>{s.orderIndex}</td>
-          <td>{s.agent?.provider || "-"}</td>
-          <td>
-            <button
-              className="btn-icon danger"
-              onClick={e => {
-                e.stopPropagation()
-                deleteStep(s.id)
+        <tbody>
+          {steps.map(s => (
+            <tr
+              key={s.id}
+              className={selected?.id === s.id ? "active" : ""}
+              onClick={() => {
+                setSelected({ ...s })
+                setSelectedAgentId(
+                  s.agent?.id ? String(s.agent.id) : ""
+                )
+                setError(null)
               }}
-              title="Delete"
             >
-              🗑️
-            </button>
-          </td>
-        </tr>
-      ))}
-    </tbody>
-
+              <td>{s.id}</td>
+              <td>{s.name}</td>
+              <td>{s.operationType}</td>
+              <td>{s.orderIndex}</td>
+              <td>{s.agent?.provider || "-"}</td>
+              <td>
+                <span className="badge-workflow">
+                  {s.workflow?.name}
+                </span>
+              </td>
+              <td>
+                <button
+                  className="btn-icon danger"
+                  onClick={e => {
+                    e.stopPropagation()
+                    deleteStep(s.id)
+                  }}
+                >
+                  🗑️
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
       </table>
 
-      {/* ====================== */}
       {/* Edit */}
-      {/* ====================== */}
       {selected && (
         <section className="editor">
           <h3>
@@ -385,7 +442,7 @@ export default function Steps() {
             }
           />
 
-          <label>Agent (optional)</label>
+          <label>Agent</label>
           <select
             value={selectedAgentId}
             onChange={e => setSelectedAgentId(e.target.value)}

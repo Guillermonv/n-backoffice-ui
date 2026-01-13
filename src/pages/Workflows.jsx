@@ -1,0 +1,329 @@
+import { useEffect, useState } from "react"
+
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
+const API_TOKEN = import.meta.env.VITE_API_TOKEN
+
+// ======================
+// Column resize helper
+// ======================
+const startResize = (th) => (e) => {
+  e.preventDefault()
+
+  const startX = e.clientX
+  const startWidth = th.offsetWidth
+
+  const onMouseMove = (e) => {
+    const newWidth = Math.max(60, startWidth + (e.clientX - startX))
+    th.style.width = `${newWidth}px`
+  }
+
+  const onMouseUp = () => {
+    document.removeEventListener("mousemove", onMouseMove)
+    document.removeEventListener("mouseup", onMouseUp)
+  }
+
+  document.addEventListener("mousemove", onMouseMove)
+  document.addEventListener("mouseup", onMouseUp)
+}
+
+// ======================
+// Resizable TH component
+// ======================
+const ResizableTH = ({ children, className, style }) => (
+  <th
+    className={className}
+    style={{
+      position: "relative",
+      whiteSpace: "nowrap",
+      ...style,
+    }}
+  >
+    {children}
+    <div
+      onMouseDown={(e) => startResize(e.currentTarget.parentElement)(e)}
+      style={{
+        position: "absolute",
+        right: 0,
+        top: 0,
+        width: "6px",
+        height: "100%",
+        cursor: "col-resize",
+        userSelect: "none",
+      }}
+    />
+  </th>
+)
+
+export default function Workflows() {
+  const [workflows, setWorkflows] = useState([])
+  const [editingId, setEditingId] = useState(null)
+
+  const [editForm, setEditForm] = useState({
+    Name: "",
+    Description: "",
+  })
+
+  const [creating, setCreating] = useState(false)
+  const [createForm, setCreateForm] = useState({
+    Name: "",
+    Description: "",
+  })
+
+  // ======================
+  // Load workflows
+  // ======================
+  useEffect(() => {
+    loadWorkflows()
+  }, [])
+
+  const loadWorkflows = async () => {
+    const res = await fetch(`${API_BASE_URL}/workflows`, {
+      headers: {
+        Authorization: `Bearer ${API_TOKEN}`,
+      },
+    })
+    setWorkflows(await res.json())
+  }
+
+  // ======================
+  // Edit
+  // ======================
+  const startEdit = (w) => {
+    setEditingId(w.ID)
+    setEditForm({
+      Name: w.Name || "",
+      Description: w.Description || "",
+    })
+  }
+
+  const cancelEdit = () => {
+    setEditingId(null)
+  }
+
+  const saveEdit = async (id) => {
+    await fetch(`${API_BASE_URL}/workflows/${id}`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${API_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        Name: editForm.Name,
+        Description: editForm.Description,
+      }),
+    })
+
+    await loadWorkflows()
+    setEditingId(null)
+  }
+
+  // ======================
+  // Create
+  // ======================
+  const startCreate = () => {
+    setCreating(true)
+    setCreateForm({ Name: "", Description: "" })
+  }
+
+  const cancelCreate = () => {
+    setCreating(false)
+  }
+
+  const saveCreate = async () => {
+    if (!createForm.Name) return
+
+    await fetch(`${API_BASE_URL}/workflows`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${API_TOKEN}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        Name: createForm.Name,
+        Description: createForm.Description,
+      }),
+    })
+
+    await loadWorkflows()
+    setCreating(false)
+  }
+
+  // ======================
+  // Delete
+  // ======================
+  const deleteWorkflow = async (id) => {
+    const ok = window.confirm("Delete this workflow?")
+    if (!ok) return
+
+    await fetch(`${API_BASE_URL}/workflows/${id}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${API_TOKEN}`,
+      },
+    })
+
+    setWorkflows((prev) => prev.filter((w) => w.ID !== id))
+  }
+
+  return (
+    <div>
+      {/* ====================== */}
+      {/* Header */}
+      {/* ====================== */}
+      <div className="page-header">
+        <h1>Workflows</h1>
+        {!creating && (
+          <button onClick={startCreate} className="btn-primary">
+            + Add workflow
+          </button>
+        )}
+        <br />
+        <br />
+      </div>
+
+      {/* ====================== */}
+      {/* Create inline */}
+      {/* ====================== */}
+      {creating && (
+        <div className="editor" style={{ marginBottom: "1rem" }}>
+          <label>Name</label>
+          <input
+            value={createForm.Name}
+            onChange={(e) =>
+              setCreateForm({ ...createForm, Name: e.target.value })
+            }
+          />
+
+          <label>Description</label>
+          <input
+            value={createForm.Description}
+            onChange={(e) =>
+              setCreateForm({
+                ...createForm,
+                Description: e.target.value,
+              })
+            }
+          />
+
+          <div>
+            <button onClick={saveCreate} className="btn-icon success">
+              ✔️ Save
+            </button>
+            <button onClick={cancelCreate} className="btn-icon">
+              ✖️ Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ====================== */}
+      {/* Table */}
+      {/* ====================== */}
+      <table className="table">
+        <thead>
+          <tr>
+            <ResizableTH className="col-id" style={{ width: "70px" }}>
+              ID
+            </ResizableTH>
+
+            <ResizableTH className="col-name" style={{ width: "180px" }}>
+              Name
+            </ResizableTH>
+
+            <ResizableTH className="col-name" style={{ width: "420px" }}>
+              Description
+            </ResizableTH>
+
+            <ResizableTH className="col-order" style={{ width: "130px" }}>
+              Actions
+            </ResizableTH>
+          </tr>
+        </thead>
+
+        <tbody>
+          {workflows.map((w) => {
+            const editing = editingId === w.ID
+
+            return (
+              <tr key={w.ID} className={editing ? "active" : ""}>
+                <td className="col-id">{w.ID}</td>
+
+                <td className="col-name">
+                  {editing ? (
+                    <input
+                      value={editForm.Name}
+                      onChange={(e) =>
+                        setEditForm({
+                          ...editForm,
+                          Name: e.target.value,
+                        })
+                      }
+                    />
+                  ) : (
+                    w.Name
+                  )}
+                </td>
+
+                <td className="col-name">
+                  {editing ? (
+                    <input
+                      value={editForm.Description}
+                      onChange={(e) =>
+                        setEditForm({
+                          ...editForm,
+                          Description: e.target.value,
+                        })
+                      }
+                    />
+                  ) : (
+                    w.Description
+                  )}
+                </td>
+
+                <td className="col-order">
+                  {!editing ? (
+                    <>
+                      <button
+                        onClick={() => startEdit(w)}
+                        className="btn-icon"
+                        title="Edit"
+                      >
+                        ✏️
+                      </button>
+
+                      <button
+                        onClick={() => deleteWorkflow(w.ID)}
+                        className="btn-icon danger"
+                        title="Delete"
+                      >
+                        🗑️
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <button
+                        onClick={() => saveEdit(w.ID)}
+                        className="btn-icon success"
+                        title="Save"
+                      >
+                        ✔️
+                      </button>
+
+                      <button
+                        onClick={cancelEdit}
+                        className="btn-icon"
+                        title="Cancel"
+                      >
+                        ✖️
+                      </button>
+                    </>
+                  )}
+                </td>
+              </tr>
+            )
+          })}
+        </tbody>
+      </table>
+    </div>
+  )
+}
