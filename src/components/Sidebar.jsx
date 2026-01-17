@@ -9,6 +9,8 @@ export default function Sidebar() {
       <NavLink to="/workflows">Workflows</NavLink>
       <NavLink to="/agents">Agents</NavLink>
       <NavLink to="/steps">Steps</NavLink>
+      <NavLink to="/executions">Executions</NavLink>
+
     </aside>
   )
 }

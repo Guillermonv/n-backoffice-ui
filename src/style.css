@@ -323,3 +323,28 @@ body {
     opacity: 1;
   }
 }
+
+.status {
+  font-weight: 600;
+}
+
+.status-green {
+  color: #1f9d55; /* verde */
+}
+
+.status-red {
+  color: #e02424; /* rojo */
+}
+
+.status-yellow {
+  color: #d97706; /* amarillo */
+}
+
+
+.cell-center {
+  display: flex;
+  align-items: center;      /* vertical */
+  justify-content: center;  /* horizontal */
+  height: 100%;
+  gap: 8px;
+}
