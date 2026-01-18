@@ -326,18 +326,21 @@ body {
 
 .status {
   font-weight: 600;
+  text-transform: uppercase;
+  font-size: 12px;
+  letter-spacing: 0.5px;
 }
 
 .status-green {
-  color: #1f9d55; /* verde */
+  color: #1f9d55; /* DONE */
 }
 
 .status-red {
-  color: #e02424; /* rojo */
+  color: #e02424; /* ERROR */
 }
 
 .status-yellow {
-  color: #d97706; /* amarillo */
+  color: #d97706; /* TODO / RUNNING / PENDING */
 }
 
 
@@ -348,3 +351,47 @@ body {
   height: 100%;
   gap: 8px;
 }
+
+/* ======================
+   Expand / Collapse all
+====================== */
+.btn-expand {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  background: white;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.btn-expand svg {
+  width: 20px;
+  height: 20px;
+  stroke: #0f172a;
+  stroke-width: 2;
+  fill: none;
+}
+
+.btn-expand:hover {
+  background: #f1f5f9;
+}
+
+.btn-expand:active {
+  transform: scale(0.95);
+}
+
+.execution-expanded.indent-only {
+  padding: 0 0 0 48px;   /* indent */
+  background: #fafbff;  /* sutil separación */
+}
+
+.execution-expanded.indent-bar-deep {
+  padding: 12px 0 16px 72px; /* ↑ espacio vertical + indent */
+  background: #fafbff;
+  border-left: 3px solid #e0e4ff;
+}
+

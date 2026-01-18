@@ -3,12 +3,51 @@ import { useEffect, useState } from "react"
 const API = import.meta.env.VITE_API_BASE_URL
 const TOKEN = import.meta.env.VITE_API_TOKEN
 
+const statusClass = status => {
+  if (!status) return "status status-yellow"
+
+  const s = status.toLowerCase()
+  if (s === "error" || s === "failed") return "status status-red"
+  if (s === "done" || s === "success") return "status status-green"
+
+  return "status status-yellow"
+}
+
+/* ======================
+   Icons
+====================== */
+const ExpandAllIcon = () => (
+  <svg viewBox="0 0 24 24">
+    <path d="M9 3H3v6M15 3h6v6M9 21H3v-6M15 21h6v-6" />
+    <path d="M3 3l6 6M21 3l-6 6M3 21l6-6M21 21l-6-6" />
+  </svg>
+)
+
+const CollapseAllIcon = () => (
+  <svg viewBox="0 0 24 24">
+    <path d="M9 9H3V3M15 9h6V3M9 15H3v6M15 15h6v6" />
+    <path d="M9 9l-6-6M15 9l6-6M9 15l-6 6M15 15l6 6" />
+  </svg>
+)
+
 export default function Execution() {
   const [executions, setExecutions] = useState([])
   const [expanded, setExpanded] = useState({})
 
   const toggle = id => {
     setExpanded(e => ({ ...e, [id]: !e[id] }))
+  }
+
+  const expandAll = () => {
+    const all = {}
+    executions.forEach(e => {
+      all[e.execution.id] = true
+    })
+    setExpanded(all)
+  }
+
+  const collapseAll = () => {
+    setExpanded({})
   }
 
   const load = async () => {
@@ -24,8 +63,36 @@ export default function Execution() {
 
   return (
     <div className="steps-page">
-      <h1>Executions</h1>
+      {/* ======================
+           Header
+      ====================== */}
+      <div className="steps-header">
+        <div className="steps-header-left">
+          <h1>Executions</h1>
+        </div>
 
+        <div className="steps-header-right" style={{ gap: 8 }}>
+          <button
+            className="btn-expand"
+            title="Expand all"
+            onClick={expandAll}
+          >
+            <ExpandAllIcon />
+          </button>
+
+          <button
+            className="btn-expand"
+            title="Collapse all"
+            onClick={collapseAll}
+          >
+            <CollapseAllIcon />
+          </button>
+        </div>
+      </div>
+
+      {/* ======================
+           Table
+      ====================== */}
       <table className="table">
         <thead>
           <tr>
@@ -44,11 +111,10 @@ export default function Execution() {
 
             return (
               <>
-                {/* MAIN ROW */}
-                <tr
-                  key={exec.id}
-                  className={isOpen ? "active" : ""}
-                >
+                {/* ======================
+                     MAIN ROW
+                ====================== */}
+                <tr key={exec.id} className={isOpen ? "active" : ""}>
                   <td>
                     <button
                       className="btn-icon"
@@ -59,7 +125,12 @@ export default function Execution() {
                   </td>
 
                   <td>{exec.id}</td>
-                  <td>{exec.status}</td>
+
+                  <td>
+                    <span className={statusClass(exec.status)}>
+                      {exec.status}
+                    </span>
+                  </td>
 
                   <td>
                     <span className="badge-workflow">
@@ -70,10 +141,15 @@ export default function Execution() {
                   <td>{exec.workflow.description}</td>
                 </tr>
 
-                {/* EXPANDED ROW */}
+                {/* ======================
+                     EXPANDED
+                ====================== */}
                 {isOpen && (
                   <tr>
-                    <td colSpan={5} style={{ padding: 0 }}>
+                    <td
+                      colSpan={5}
+                      className="execution-expanded indent-bar-deep"
+                    >
                       <table className="table" style={{ margin: 0 }}>
                         <thead>
                           <tr>
@@ -89,9 +165,16 @@ export default function Execution() {
                           {e.steps.map(s => (
                             <tr key={s.id}>
                               <td>{s.step_id}</td>
-                              <td>{s.status}</td>
+
+                              <td>
+                                <span className={statusClass(s.status)}>
+                                  {s.status}
+                                </span>
+                              </td>
+
                               <td>{s.step.Name}</td>
                               <td>{s.step.OperationType}</td>
+
                               <td>
                                 <pre
                                   style={{
