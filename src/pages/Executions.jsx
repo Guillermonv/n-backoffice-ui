@@ -14,6 +14,61 @@ const statusClass = status => {
 }
 
 /* ======================
+   Column resize helper
+====================== */
+const startResize = th => e => {
+  e.preventDefault()
+
+  const startX = e.clientX
+  const startWidth = th.offsetWidth
+
+  const onMouseMove = e => {
+    const newWidth = Math.max(
+      60,
+      startWidth + (e.clientX - startX)
+    )
+    th.style.width = `${newWidth}px`
+  }
+
+  const onMouseUp = () => {
+    document.removeEventListener("mousemove", onMouseMove)
+    document.removeEventListener("mouseup", onMouseUp)
+  }
+
+  document.addEventListener("mousemove", onMouseMove)
+  document.addEventListener("mouseup", onMouseUp)
+}
+
+/* ======================
+   Resizable TH
+====================== */
+const ResizableTH = ({ children, style }) => (
+  <th
+    style={{
+      position: "relative",
+      whiteSpace: "nowrap",
+      ...style
+    }}
+  >
+    {children}
+    <div
+      onMouseDown={e =>
+        startResize(e.currentTarget.parentElement)(e)
+      }
+      style={{
+        position: "absolute",
+        right: 0,
+        top: 0,
+        width: 6,
+        height: "100%",
+        cursor: "col-resize",
+        userSelect: "none"
+      }}
+    />
+  </th>
+)
+
+/* ======================
    Icons
 ====================== */
 const ExpandAllIcon = () => (
@@ -34,9 +89,8 @@ export default function Execution() {
   const [executions, setExecutions] = useState([])
   const [expanded, setExpanded] = useState({})
 
-  const toggle = id => {
+  const toggle = id =>
     setExpanded(e => ({ ...e, [id]: !e[id] }))
-  }
 
   const expandAll = () => {
     const all = {}
@@ -46,9 +100,7 @@ export default function Execution() {
     setExpanded(all)
   }
 
-  const collapseAll = () => {
-    setExpanded({})
-  }
+  const collapseAll = () => setExpanded({})
 
   const load = async () => {
     const res = await fetch(`${API}/step-executions-grouped`, {
@@ -97,10 +149,20 @@ export default function Execution() {
         <thead>
           <tr>
             <th style={{ width: 60 }} />
-            <th style={{ width: 120 }}>Execution</th>
-            <th style={{ width: 120 }}>Status</th>
-            <th style={{ width: 260 }}>Workflow</th>
-            <th>Description</th>
+
+            <ResizableTH style={{ width: 120 }}>
+              Execution
+            </ResizableTH>
+
+            <ResizableTH style={{ width: 120 }}>
+              Status
+            </ResizableTH>
+
+            <ResizableTH style={{ width: 260 }}>
+              Workflow
+            </ResizableTH>
+
+            <ResizableTH>Description</ResizableTH>
           </tr>
         </thead>
 
@@ -153,11 +215,23 @@ export default function Execution() {
                       <table className="table" style={{ margin: 0 }}>
                         <thead>
                           <tr>
-                            <th style={{ width: 80 }}>Step</th>
-                            <th style={{ width: 120 }}>Status</th>
-                            <th style={{ width: 220 }}>Name</th>
-                            <th style={{ width: 220 }}>Operation</th>
-                            <th>Output</th>
+                            <ResizableTH style={{ width: 80 }}>
+                              Step
+                            </ResizableTH>
+
+                            <ResizableTH style={{ width: 120 }}>
+                              Status
+                            </ResizableTH>
+
+                            <ResizableTH style={{ width: 220 }}>
+                              Name
+                            </ResizableTH>
+
+                            <ResizableTH style={{ width: 220 }}>
+                              Operation
+                            </ResizableTH>
+
+                            <ResizableTH>Output</ResizableTH>
                           </tr>
                         </thead>
 
@@ -167,7 +241,9 @@ export default function Execution() {
                               <td>{s.step_id}</td>
 
                               <td>
-                                <span className={statusClass(s.status)}>
+                                <span
+                                  className={statusClass(s.status)}
+                                >
                                   {s.status}
                                 </span>
                               </td>
