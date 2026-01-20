@@ -157,6 +157,8 @@ export default function Execution() {
             <ResizableTH style={{ width: 120 }}>Status</ResizableTH>
             <ResizableTH style={{ width: 260 }}>Workflow</ResizableTH>
             <ResizableTH>Description</ResizableTH>
+            <ResizableTH style={{ width: 160 }}>Created</ResizableTH>
+            <ResizableTH style={{ width: 160 }}>Updated</ResizableTH>
           </tr>
         </thead>
 
@@ -164,6 +166,18 @@ export default function Execution() {
           {executions.map(e => {
             const exec = e.execution
             const isOpen = expanded[exec.id]
+
+            const createdAt =
+              exec.created_at &&
+              !exec.created_at.startsWith("0001-01-01")
+                ? exec.created_at
+                : e.steps?.[0]?.created_at
+
+            const updatedAt =
+              exec.updated_at &&
+              !exec.updated_at.startsWith("0001-01-01")
+                ? exec.updated_at
+                : e.steps?.[e.steps.length - 1]?.updated_at
 
             return (
               <>
@@ -195,6 +209,18 @@ export default function Execution() {
                   </td>
 
                   <td>{exec.workflow.description}</td>
+
+                  <td>
+                    {createdAt
+                      ? new Date(createdAt).toLocaleString()
+                      : "-"}
+                  </td>
+
+                  <td>
+                    {updatedAt
+                      ? new Date(updatedAt).toLocaleString()
+                      : "-"}
+                  </td>
                 </tr>
 
                 {/* ======================
@@ -203,7 +229,7 @@ export default function Execution() {
                 {isOpen && (
                   <tr>
                     <td
-                      colSpan={5}
+                      colSpan={7}
                       className="execution-expanded indent-bar-deep"
                     >
                       <table className="table" style={{ margin: 0 }}>
