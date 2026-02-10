@@ -90,6 +90,10 @@ export default function Execution() {
   const [fromDate, setFromDate] = useState("")
   const [toDate, setToDate] = useState("")
 
+  // 🔥 filtros nuevos (API real)
+  const [status, setStatus] = useState("")
+  const [workflowName, setWorkflowName] = useState("")
+
   const toggle = id =>
     setExpanded(e => ({ ...e, [id]: !e[id] }))
 
@@ -115,6 +119,15 @@ export default function Execution() {
 
     if (toDate) {
       params.append("to", new Date(toDate).toISOString())
+    }
+
+    // ✅ filtros correctos
+    if (status) {
+      params.append("status", status)
+    }
+
+    if (workflowName) {
+      params.append("name", workflowName)
     }
 
     const res = await fetch(
@@ -159,6 +172,25 @@ export default function Execution() {
             title="To"
           />
 
+          {/* 🔥 filtros nuevos */}
+          <select
+            value={status}
+            onChange={e => setStatus(e.target.value)}
+          >
+            <option value="">All status</option>
+            <option value="DONE">DONE</option>
+            <option value="ERROR">ERROR</option>
+            <option value="RUNNING">RUNNING</option>
+            <option value="PENDING">PENDING</option>
+          </select>
+
+          <input
+            type="text"
+            placeholder="Workflow name"
+            value={workflowName}
+            onChange={e => setWorkflowName(e.target.value)}
+          />
+
           <button className="btn" onClick={load}>
             Apply
           </button>
@@ -192,7 +224,6 @@ export default function Execution() {
             <ResizableTH style={{ width: 120 }}>Status</ResizableTH>
             <ResizableTH style={{ width: 260 }}>Workflow</ResizableTH>
             <ResizableTH>Description</ResizableTH>
-            {/* +60% */}
             <ResizableTH style={{ width: 256 }}>Created</ResizableTH>
           </tr>
         </thead>
@@ -265,7 +296,6 @@ export default function Execution() {
                               Operation
                             </ResizableTH>
                             <ResizableTH>Output</ResizableTH>
-                            {/* +60% */}
                             <ResizableTH style={{ width: 256 }}>
                               Created
                             </ResizableTH>
