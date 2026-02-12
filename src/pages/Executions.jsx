@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import React, { useEffect, useState } from "react"
 
 const API = import.meta.env.VITE_API_BASE_URL
 const TOKEN = import.meta.env.VITE_API_TOKEN
@@ -65,7 +65,6 @@ export default function Execution() {
   const [status, setStatus] = useState("")
   const [workflowName, setWorkflowName] = useState("")
 
-  // 🔥 paginación server-side
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [totalPages, setTotalPages] = useState(1)
@@ -105,16 +104,32 @@ export default function Execution() {
 
   return (
     <div className="steps-page">
+      <h1>Executions</h1>
+
       {/* ======================
-           Filters
+         HEADER
       ====================== */}
       <div className="steps-header">
-        <h1>Executions</h1>
 
-        <input type="datetime-local" value={fromDate} onChange={e => setFromDate(e.target.value)} />
-        <input type="datetime-local" value={toDate} onChange={e => setToDate(e.target.value)} />
+        <input
+          type="datetime-local"
+          className="filter-input"
+          value={fromDate}
+          onChange={e => setFromDate(e.target.value)}
+        />
 
-        <select value={status} onChange={e => setStatus(e.target.value)}>
+        <input
+          type="datetime-local"
+          className="filter-input"
+          value={toDate}
+          onChange={e => setToDate(e.target.value)}
+        />
+
+        <select
+          className="select-primary filter-input"
+          value={status}
+          onChange={e => setStatus(e.target.value)}
+        >
           <option value="">All status</option>
           <option value="DONE">DONE</option>
           <option value="ERROR">ERROR</option>
@@ -123,13 +138,14 @@ export default function Execution() {
 
         <input
           type="text"
+          className="filter-input"
           placeholder="Workflow name"
           value={workflowName}
           onChange={e => setWorkflowName(e.target.value)}
         />
 
         <button
-          className="btn"
+          className="btn-primary"
           onClick={() => {
             setPage(1)
             load()
@@ -137,46 +153,47 @@ export default function Execution() {
         >
           Apply
         </button>
-      </div>
 
-      {/* ======================
-           Pagination
-      ====================== */}
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 8 }}>
-        <div>
-          <button className="btn" disabled={page === 1} onClick={() => setPage(p => p - 1)}>
+        {/* PAGINACIÓN */}
+        <div className="pagination-box">
+          <button
+            className="btn-primary"
+            disabled={page === 1}
+            onClick={() => setPage(p => p - 1)}
+          >
             Prev
           </button>
 
-          <span style={{ margin: "0 8px" }}>
+          <span className="page-info">
             Page {page} / {totalPages}
           </span>
 
           <button
-            className="btn"
+            className="btn-primary"
             disabled={page === totalPages}
             onClick={() => setPage(p => p + 1)}
           >
             Next
           </button>
-        </div>
 
-        <select
-          value={pageSize}
-          onChange={e => {
-            setPageSize(Number(e.target.value))
-            setPage(1)
-          }}
-        >
-          <option value={5}>5</option>
-          <option value={10}>10</option>
-          <option value={20}>20</option>
-          <option value={50}>50</option>
-        </select>
+          <select
+            className="select-primary filter-input"
+            value={pageSize}
+            onChange={e => {
+              setPageSize(Number(e.target.value))
+              setPage(1)
+            }}
+          >
+            <option value={5}>5</option>
+            <option value={10}>10</option>
+            <option value={20}>20</option>
+            <option value={50}>50</option>
+          </select>
+        </div>
       </div>
 
       {/* ======================
-           Table
+           TABLE
       ====================== */}
       <table className="table">
         <thead>
@@ -196,16 +213,25 @@ export default function Execution() {
             const open = expanded[exec.id]
 
             return (
-              <>
-                <tr key={exec.id}>
+              <React.Fragment key={exec.id}>
+                <tr>
                   <td>
-                    <button className="btn-icon" onClick={() => toggle(exec.id)}>
+                    <button
+                      className="btn-icon"
+                      onClick={() => toggle(exec.id)}
+                    >
                       {open ? "▾" : "▸"}
                     </button>
                   </td>
 
                   <td>{exec.id}</td>
-                  <td><span className={statusClass(exec.status)}>{exec.status}</span></td>
+
+                  <td>
+                    <span className={statusClass(exec.status)}>
+                      {exec.status}
+                    </span>
+                  </td>
+
                   <td>{exec.workflow.name}</td>
                   <td>{exec.workflow.description}</td>
                   <td>{new Date(exec.created_at).toLocaleString()}</td>
@@ -213,7 +239,7 @@ export default function Execution() {
 
                 {open && (
                   <tr>
-                    <td colSpan={6}>
+                    <td colSpan={6} className="execution-expanded indent-bar-deep">
                       <table className="table">
                         <tbody>
                           {e.steps.map(s => (
@@ -233,7 +259,7 @@ export default function Execution() {
                     </td>
                   </tr>
                 )}
-              </>
+              </React.Fragment>
             )
           })}
         </tbody>

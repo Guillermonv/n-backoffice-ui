@@ -395,4 +395,37 @@ body {
   border-left: 3px solid #e0e4ff;
 }
 
+.steps-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
 
+.filter-input {
+  height: 38px;
+  padding: 0 12px;
+  font-size: 14px;
+  border-radius: 6px;
+  border: 1px solid #dcdcdc;
+  box-sizing: border-box;
+}
+
+.btn-primary {
+  height: 38px;
+  padding: 0 16px;
+  display: inline-flex;
+  align-items: center;
+}
+
+.pagination-box {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.page-info {
+  font-size: 14px;
+  font-weight: 500;
+}
