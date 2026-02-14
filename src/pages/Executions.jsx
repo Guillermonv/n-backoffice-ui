@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react"
+import React, { useEffect, useState, useRef } from "react"
 
 const API = import.meta.env.VITE_API_BASE_URL
 const TOKEN = import.meta.env.VITE_API_TOKEN
@@ -16,44 +16,56 @@ const statusClass = status => {
 /* =====================
    Column resize helper
 ====================== */
-const startResize = th => e => {
-  e.preventDefault()
+const ResizableTH = ({ children, columnKey, columnWidths, setColumnWidths }) => {
+  const thRef = useRef(null)
 
-  const startX = e.clientX
-  const startWidth = th.offsetWidth
+  const startResize = e => {
+    e.preventDefault()
 
-  const onMouseMove = e => {
-    const newWidth = Math.max(60, startWidth + (e.clientX - startX))
-    th.style.width = `${newWidth}px`
+    const startX = e.clientX
+    const startWidth = thRef.current.offsetWidth
+
+    const onMouseMove = e => {
+      const newWidth = Math.max(60, startWidth + (e.clientX - startX))
+      setColumnWidths(prev => ({
+        ...prev,
+        [columnKey]: newWidth
+      }))
+    }
+
+    const onMouseUp = () => {
+      document.removeEventListener("mousemove", onMouseMove)
+      document.removeEventListener("mouseup", onMouseUp)
+    }
+
+    document.addEventListener("mousemove", onMouseMove)
+    document.addEventListener("mouseup", onMouseUp)
   }
 
-  const onMouseUp = () => {
-    document.removeEventListener("mousemove", onMouseMove)
-    document.removeEventListener("mouseup", onMouseUp)
-  }
-
-  document.addEventListener("mousemove", onMouseMove)
-  document.addEventListener("mouseup", onMouseUp)
-}
-
-const ResizableTH = ({ children, style }) => (
-  <th style={{ position: "relative", whiteSpace: "nowrap", ...style }}>
-    {children}
-    <div
-      onMouseDown={e =>
-        startResize(e.currentTarget.parentElement)(e)
-      }
+  return (
+    <th
+      ref={thRef}
       style={{
-        position: "absolute",
-        right: 0,
-        top: 0,
-        width: 6,
-        height: "100%",
-        cursor: "col-resize"
+        position: "relative",
+        whiteSpace: "nowrap",
+        width: columnWidths[columnKey]
       }}
-    />
-  </th>
-)
+    >
+      {children}
+      <div
+        onMouseDown={startResize}
+        style={{
+          position: "absolute",
+          right: 0,
+          top: 0,
+          width: 6,
+          height: "100%",
+          cursor: "col-resize"
+        }}
+      />
+    </th>
+  )
+}
 
 export default function Execution() {
   const [executions, setExecutions] = useState([])
@@ -68,6 +80,8 @@ export default function Execution() {
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [totalPages, setTotalPages] = useState(1)
+
+  const [columnWidths, setColumnWidths] = useState({})
 
   const toggle = id =>
     setExpanded(e => ({ ...e, [id]: !e[id] }))
@@ -94,8 +108,9 @@ export default function Execution() {
     )
 
     const json = await res.json()
+
     setExecutions(json.data)
-    setTotalPages(json.pagination.totalPages)
+    setTotalPages(json.pagination?.totalPages || 1)
   }
 
   useEffect(() => {
@@ -106,11 +121,7 @@ export default function Execution() {
     <div className="steps-page">
       <h1>Executions</h1>
 
-      {/* ======================
-         HEADER
-      ====================== */}
       <div className="steps-header">
-
         <input
           type="datetime-local"
           className="filter-input"
@@ -154,7 +165,6 @@ export default function Execution() {
           Apply
         </button>
 
-        {/* PAGINACIÓN */}
         <div className="pagination-box">
           <button
             className="btn-primary"
@@ -192,18 +202,25 @@ export default function Execution() {
         </div>
       </div>
 
-      {/* ======================
-           TABLE
-      ====================== */}
       <table className="table">
         <thead>
           <tr>
             <th />
-            <ResizableTH>Execution</ResizableTH>
-            <ResizableTH>Status</ResizableTH>
-            <ResizableTH>Workflow</ResizableTH>
-            <ResizableTH>Description</ResizableTH>
-            <ResizableTH>Created</ResizableTH>
+            <ResizableTH columnKey="execution" columnWidths={columnWidths} setColumnWidths={setColumnWidths}>
+              Execution
+            </ResizableTH>
+            <ResizableTH columnKey="status" columnWidths={columnWidths} setColumnWidths={setColumnWidths}>
+              Status
+            </ResizableTH>
+            <ResizableTH columnKey="workflow" columnWidths={columnWidths} setColumnWidths={setColumnWidths}>
+              Workflow
+            </ResizableTH>
+            <ResizableTH columnKey="description" columnWidths={columnWidths} setColumnWidths={setColumnWidths}>
+              Description
+            </ResizableTH>
+            <ResizableTH columnKey="created" columnWidths={columnWidths} setColumnWidths={setColumnWidths}>
+              Created
+            </ResizableTH>
           </tr>
         </thead>
 
@@ -216,25 +233,35 @@ export default function Execution() {
               <React.Fragment key={exec.id}>
                 <tr>
                   <td>
-                    <button
-                      className="btn-icon"
-                      onClick={() => toggle(exec.id)}
-                    >
+                    <button className="btn-icon" onClick={() => toggle(exec.id)}>
                       {open ? "▾" : "▸"}
                     </button>
                   </td>
 
-                  <td>{exec.id}</td>
+                  <td style={{ width: columnWidths.execution }}>
+                    {exec.id}
+                  </td>
 
-                  <td>
+                  <td style={{ width: columnWidths.status }}>
                     <span className={statusClass(exec.status)}>
                       {exec.status}
                     </span>
                   </td>
 
-                  <td>{exec.workflow.name}</td>
-                  <td>{exec.workflow.description}</td>
-                  <td>{new Date(exec.created_at).toLocaleString()}</td>
+                  <td style={{ width: columnWidths.workflow }}>
+                    {exec.workflow?.name}
+                  </td>
+
+                  <td style={{ width: columnWidths.description }}>
+                    {exec.workflow?.description}
+                  </td>
+
+                  {/* ✅ CORRECCIÓN ACÁ */}
+                  <td style={{ width: columnWidths.created }}>
+                    {e.created_at
+                      ? new Date(e.created_at).toLocaleString()
+                      : "-"}
+                  </td>
                 </tr>
 
                 {open && (
@@ -242,14 +269,16 @@ export default function Execution() {
                     <td colSpan={6} className="execution-expanded indent-bar-deep">
                       <table className="table">
                         <tbody>
-                          {e.steps.map(s => (
+                          {e.steps?.map(s => (
                             <tr key={s.id}>
                               <td>{s.step_id}</td>
-                              <td>{s.step.Name}</td>
+                              <td>{s.step?.Name}</td>
                               <td>{s.status}</td>
                               <td>
                                 <pre onClick={() => toggleOutput(s.id)}>
-                                  {s.output}
+                                  {expandedOutput[s.id]
+                                    ? s.output
+                                    : s.output?.slice(0, 300)}
                                 </pre>
                               </td>
                             </tr>
