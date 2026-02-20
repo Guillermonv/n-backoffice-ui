@@ -5,37 +5,43 @@ const TOKEN = import.meta.env.VITE_API_TOKEN
 
 const statusClass = status => {
   if (!status) return "status status-yellow"
-
   const s = status.toLowerCase()
   if (s === "error" || s === "failed") return "status status-red"
   if (s === "done" || s === "success") return "status status-green"
-
   return "status status-yellow"
 }
 
 /* =====================
-   Column resize helper
+   Reusable Resizable TH
 ====================== */
-const ResizableTH = ({ children, columnKey, columnWidths, setColumnWidths }) => {
-  const thRef = useRef(null)
+const ResizableTH = ({
+  children,
+  columnKey,
+  widths,
+  setWidths,
+  defaultWidth
+}) => {
+  const ref = useRef(null)
 
   const startResize = e => {
     e.preventDefault()
 
     const startX = e.clientX
-    const startWidth = thRef.current.offsetWidth
+    const startWidth = ref.current.offsetWidth
+
+    document.body.style.cursor = "col-resize"
+    document.body.style.userSelect = "none"
 
     const onMouseMove = e => {
-      const newWidth = Math.max(60, startWidth + (e.clientX - startX))
-      setColumnWidths(prev => ({
-        ...prev,
-        [columnKey]: newWidth
-      }))
+      const newWidth = Math.max(80, startWidth + (e.clientX - startX))
+      setWidths(prev => ({ ...prev, [columnKey]: newWidth }))
     }
 
     const onMouseUp = () => {
       document.removeEventListener("mousemove", onMouseMove)
       document.removeEventListener("mouseup", onMouseUp)
+      document.body.style.cursor = "default"
+      document.body.style.userSelect = "auto"
     }
 
     document.addEventListener("mousemove", onMouseMove)
@@ -44,25 +50,14 @@ const ResizableTH = ({ children, columnKey, columnWidths, setColumnWidths }) => 
 
   return (
     <th
-      ref={thRef}
+      ref={ref}
       style={{
-        position: "relative",
-        whiteSpace: "nowrap",
-        width: columnWidths[columnKey]
+        width: widths[columnKey] || defaultWidth,
+        minWidth: 80
       }}
     >
       {children}
-      <div
-        onMouseDown={startResize}
-        style={{
-          position: "absolute",
-          right: 0,
-          top: 0,
-          width: 6,
-          height: "100%",
-          cursor: "col-resize"
-        }}
-      />
+      <div className="col-resizer" onMouseDown={startResize} />
     </th>
   )
 }
@@ -72,16 +67,30 @@ export default function Execution() {
   const [expanded, setExpanded] = useState({})
   const [expandedOutput, setExpandedOutput] = useState({})
 
-  const [fromDate, setFromDate] = useState("")
-  const [toDate, setToDate] = useState("")
-  const [status, setStatus] = useState("")
-  const [workflowName, setWorkflowName] = useState("")
-
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [totalPages, setTotalPages] = useState(1)
 
-  const [columnWidths, setColumnWidths] = useState({})
+  /* widths MAIN table */
+  const [mainWidths, setMainWidths] = useState({})
+
+  /* widths NESTED table */
+  const [nestedWidths, setNestedWidths] = useState({})
+
+  const defaultMain = {
+    execution: 120,
+    status: 120,
+    workflow: 260,
+    description: 350,
+    created: 200
+  }
+
+  const defaultNested = {
+    stepid: 100,
+    name: 200,
+    status: 120,
+    output: 400
+  }
 
   const toggle = id =>
     setExpanded(e => ({ ...e, [id]: !e[id] }))
@@ -91,24 +100,15 @@ export default function Execution() {
 
   const load = async () => {
     const params = new URLSearchParams()
-
-    if (fromDate) params.append("from", new Date(fromDate).toISOString())
-    if (toDate) params.append("to", new Date(toDate).toISOString())
-    if (status) params.append("status", status)
-    if (workflowName) params.append("name", workflowName)
-
     params.append("page", page)
     params.append("pageSize", pageSize)
 
     const res = await fetch(
       `${API}/step-executions-grouped?${params.toString()}`,
-      {
-        headers: { Authorization: `Bearer ${TOKEN}` }
-      }
+      { headers: { Authorization: `Bearer ${TOKEN}` } }
     )
 
     const json = await res.json()
-
     setExecutions(json.data)
     setTotalPages(json.pagination?.totalPages || 1)
   }
@@ -121,106 +121,16 @@ export default function Execution() {
     <div className="steps-page">
       <h1>Executions</h1>
 
-      <div className="steps-header">
-        <input
-          type="datetime-local"
-          className="filter-input"
-          value={fromDate}
-          onChange={e => setFromDate(e.target.value)}
-        />
-
-        <input
-          type="datetime-local"
-          className="filter-input"
-          value={toDate}
-          onChange={e => setToDate(e.target.value)}
-        />
-
-        <select
-          className="select-primary filter-input"
-          value={status}
-          onChange={e => setStatus(e.target.value)}
-        >
-          <option value="">All status</option>
-          <option value="DONE">DONE</option>
-          <option value="ERROR">ERROR</option>
-          <option value="RUNNING">RUNNING</option>
-        </select>
-
-        <input
-          type="text"
-          className="filter-input"
-          placeholder="Workflow name"
-          value={workflowName}
-          onChange={e => setWorkflowName(e.target.value)}
-        />
-
-        <button
-          className="btn-primary"
-          onClick={() => {
-            setPage(1)
-            load()
-          }}
-        >
-          Apply
-        </button>
-
-        <div className="pagination-box">
-          <button
-            className="btn-primary"
-            disabled={page === 1}
-            onClick={() => setPage(p => p - 1)}
-          >
-            Prev
-          </button>
-
-          <span className="page-info">
-            Page {page} / {totalPages}
-          </span>
-
-          <button
-            className="btn-primary"
-            disabled={page === totalPages}
-            onClick={() => setPage(p => p + 1)}
-          >
-            Next
-          </button>
-
-          <select
-            className="select-primary filter-input"
-            value={pageSize}
-            onChange={e => {
-              setPageSize(Number(e.target.value))
-              setPage(1)
-            }}
-          >
-            <option value={5}>5</option>
-            <option value={10}>10</option>
-            <option value={20}>20</option>
-            <option value={50}>50</option>
-          </select>
-        </div>
-      </div>
-
+      {/* ================= MAIN TABLE ================= */}
       <table className="table">
         <thead>
           <tr>
-            <th />
-            <ResizableTH columnKey="execution" columnWidths={columnWidths} setColumnWidths={setColumnWidths}>
-              Execution
-            </ResizableTH>
-            <ResizableTH columnKey="status" columnWidths={columnWidths} setColumnWidths={setColumnWidths}>
-              Status
-            </ResizableTH>
-            <ResizableTH columnKey="workflow" columnWidths={columnWidths} setColumnWidths={setColumnWidths}>
-              Workflow
-            </ResizableTH>
-            <ResizableTH columnKey="description" columnWidths={columnWidths} setColumnWidths={setColumnWidths}>
-              Description
-            </ResizableTH>
-            <ResizableTH columnKey="created" columnWidths={columnWidths} setColumnWidths={setColumnWidths}>
-              Created
-            </ResizableTH>
+            <th style={{ width: 40 }} />
+            <ResizableTH columnKey="execution" widths={mainWidths} setWidths={setMainWidths} defaultWidth={defaultMain.execution}>Execution</ResizableTH>
+            <ResizableTH columnKey="status" widths={mainWidths} setWidths={setMainWidths} defaultWidth={defaultMain.status}>Status</ResizableTH>
+            <ResizableTH columnKey="workflow" widths={mainWidths} setWidths={setMainWidths} defaultWidth={defaultMain.workflow}>Workflow</ResizableTH>
+            <ResizableTH columnKey="description" widths={mainWidths} setWidths={setMainWidths} defaultWidth={defaultMain.description}>Description</ResizableTH>
+            <ResizableTH columnKey="created" widths={mainWidths} setWidths={setMainWidths} defaultWidth={defaultMain.created}>Created</ResizableTH>
           </tr>
         </thead>
 
@@ -238,44 +148,53 @@ export default function Execution() {
                     </button>
                   </td>
 
-                  <td style={{ width: columnWidths.execution }}>
-                    {exec.id}
-                  </td>
-
-                  <td style={{ width: columnWidths.status }}>
+                  <td style={{ width: mainWidths.execution || defaultMain.execution }}>{exec.id}</td>
+                  <td style={{ width: mainWidths.status || defaultMain.status }}>
                     <span className={statusClass(exec.status)}>
                       {exec.status}
                     </span>
                   </td>
-
-                  <td style={{ width: columnWidths.workflow }}>
+                  <td style={{ width: mainWidths.workflow || defaultMain.workflow }}>
                     {exec.workflow?.name}
                   </td>
-
-                  <td style={{ width: columnWidths.description }}>
+                  <td style={{ width: mainWidths.description || defaultMain.description }}>
                     {exec.workflow?.description}
                   </td>
-
-                  {/* ✅ CORRECCIÓN ACÁ */}
-                  <td style={{ width: columnWidths.created }}>
-                    {e.created_at
-                      ? new Date(e.created_at).toLocaleString()
-                      : "-"}
+                  <td style={{ width: mainWidths.created || defaultMain.created }}>
+                    {e.created_at ? new Date(e.created_at).toLocaleString() : "-"}
                   </td>
                 </tr>
 
                 {open && (
                   <tr>
                     <td colSpan={6} className="execution-expanded indent-bar-deep">
+                      
+                      {/* ============== NESTED TABLE ============== */}
                       <table className="table">
+                        <thead>
+                          <tr>
+                            <ResizableTH columnKey="stepid" widths={nestedWidths} setWidths={setNestedWidths} defaultWidth={defaultNested.stepid}>Step ID</ResizableTH>
+                            <ResizableTH columnKey="name" widths={nestedWidths} setWidths={setNestedWidths} defaultWidth={defaultNested.name}>Name</ResizableTH>
+                            <ResizableTH columnKey="status" widths={nestedWidths} setWidths={setNestedWidths} defaultWidth={defaultNested.status}>Status</ResizableTH>
+                            <ResizableTH columnKey="output" widths={nestedWidths} setWidths={setNestedWidths} defaultWidth={defaultNested.output}>Output</ResizableTH>
+                          </tr>
+                        </thead>
+
                         <tbody>
                           {e.steps?.map(s => (
                             <tr key={s.id}>
-                              <td>{s.step_id}</td>
-                              <td>{s.step?.Name}</td>
-                              <td>{s.status}</td>
-                              <td>
-                                <pre onClick={() => toggleOutput(s.id)}>
+                              <td style={{ width: nestedWidths.stepid || defaultNested.stepid }}>{s.step_id}</td>
+                              <td style={{ width: nestedWidths.name || defaultNested.name }}>{s.step?.Name}</td>
+                              <td style={{ width: nestedWidths.status || defaultNested.status }}>
+                                <span className={statusClass(s.status)}>
+                                  {s.status}
+                                </span>
+                              </td>
+                              <td style={{ width: nestedWidths.output || defaultNested.output }}>
+                                <pre
+                                  style={{ cursor: "pointer" }}
+                                  onClick={() => toggleOutput(s.id)}
+                                >
                                   {expandedOutput[s.id]
                                     ? s.output
                                     : s.output?.slice(0, 300)}
@@ -285,6 +204,7 @@ export default function Execution() {
                           ))}
                         </tbody>
                       </table>
+
                     </td>
                   </tr>
                 )}
