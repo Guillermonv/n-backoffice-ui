@@ -12,7 +12,7 @@ const statusClass = status => {
 }
 
 /* =====================
-   Reusable Resizable TH
+   Resizable TH
 ====================== */
 const ResizableTH = ({
   children,
@@ -25,7 +25,6 @@ const ResizableTH = ({
 
   const startResize = e => {
     e.preventDefault()
-
     const startX = e.clientX
     const startWidth = ref.current.offsetWidth
 
@@ -71,10 +70,7 @@ export default function Execution() {
   const [pageSize, setPageSize] = useState(10)
   const [totalPages, setTotalPages] = useState(1)
 
-  /* widths MAIN table */
   const [mainWidths, setMainWidths] = useState({})
-
-  /* widths NESTED table */
   const [nestedWidths, setNestedWidths] = useState({})
 
   const defaultMain = {
@@ -117,9 +113,44 @@ export default function Execution() {
     load()
   }, [page, pageSize])
 
+  const goFirst = () => setPage(1)
+  const goPrev = () => setPage(p => Math.max(1, p - 1))
+  const goNext = () => setPage(p => Math.min(totalPages, p + 1))
+  const goLast = () => setPage(totalPages)
+
   return (
     <div className="steps-page">
       <h1>Executions</h1>
+
+      {/* ===================== PAGINATION (RIGHT / HORIZONTAL) ===================== */}
+      <div className="steps-header">
+        <div className="pagination-box">
+
+          <button className="btn-primary" onClick={goFirst} disabled={page === 1}>⏮</button>
+          <button className="btn-primary" onClick={goPrev} disabled={page === 1}>⏪</button>
+
+          <span className="page-info">
+            Page <strong>{page}</strong> of <strong>{totalPages}</strong>
+          </span>
+
+          <button className="btn-primary" onClick={goNext} disabled={page === totalPages}>⏩</button>
+          <button className="btn-primary" onClick={goLast} disabled={page === totalPages}>⏭</button>
+
+          <select
+            className="select-primary"
+            value={pageSize}
+            onChange={e => {
+              setPageSize(Number(e.target.value))
+              setPage(1)
+            }}
+          >
+            <option value={10}>10</option>
+            <option value={20}>20</option>
+            <option value={100}>100</option>
+          </select>
+
+        </div>
+      </div>
 
       {/* ================= MAIN TABLE ================= */}
       <table className="table">
@@ -168,8 +199,6 @@ export default function Execution() {
                 {open && (
                   <tr>
                     <td colSpan={6} className="execution-expanded indent-bar-deep">
-                      
-                      {/* ============== NESTED TABLE ============== */}
                       <table className="table">
                         <thead>
                           <tr>
@@ -179,7 +208,6 @@ export default function Execution() {
                             <ResizableTH columnKey="output" widths={nestedWidths} setWidths={setNestedWidths} defaultWidth={defaultNested.output}>Output</ResizableTH>
                           </tr>
                         </thead>
-
                         <tbody>
                           {e.steps?.map(s => (
                             <tr key={s.id}>
@@ -204,7 +232,6 @@ export default function Execution() {
                           ))}
                         </tbody>
                       </table>
-
                     </td>
                   </tr>
                 )}
