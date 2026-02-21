@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { useEffect, useState, Fragment } from "react"
 
 const API = import.meta.env.VITE_API_BASE_URL
 const TOKEN = import.meta.env.VITE_API_TOKEN
@@ -25,6 +25,7 @@ export default function Steps() {
   /* ======================
      LOADERS
   ====================== */
+
   const loadSteps = async () => {
     const res = await fetch(`${API}/steps`, {
       headers: { Authorization: `Bearer ${TOKEN}` }
@@ -75,12 +76,14 @@ export default function Steps() {
   /* ======================
      HELPERS
   ====================== */
+
   const hasPrompt = s =>
     typeof s.prompt === "string" && s.prompt.trim().length > 0
 
   /* ======================
      ACTIONS
   ====================== */
+
   const toggleExpand = id => {
     setExpanded(e => ({ ...e, [id]: !e[id] }))
   }
@@ -171,6 +174,7 @@ export default function Steps() {
   /* ======================
      RENDER
   ====================== */
+
   return (
     <div className="steps-page">
       <h1>Steps</h1>
@@ -181,7 +185,8 @@ export default function Steps() {
       >
         {showCreate ? "Cancel" : "+ Add Step"}
       </button>
-<br></br><br></br>
+
+      <br /><br />
 
       {showCreate && (
         <div className="editor">
@@ -275,6 +280,7 @@ export default function Steps() {
             <th>Name</th>
             <th style={{ width: 180 }}>Operation</th>
             <th style={{ width: 80 }}>Order</th>
+            <th style={{ width: 200 }}>Workflow</th> {/* NEW */}
             <th style={{ width: 200 }}>Agent</th>
             <th style={{ width: 120 }} />
           </tr>
@@ -287,8 +293,8 @@ export default function Steps() {
             const expandable = hasPrompt(s)
 
             return (
-              <>
-                <tr key={s.id} className={editing ? "editing" : ""}>
+              <Fragment key={s.id}>
+                <tr className={editing ? "editing" : ""}>
                   <td>
                     {expandable && (
                       <button
@@ -351,6 +357,30 @@ export default function Steps() {
                     )}
                   </td>
 
+                  {/* WORKFLOW COLUMN */}
+                  <td>
+                    {editing ? (
+                      <select
+                        value={editForm.workflowId}
+                        onChange={e =>
+                          setEditForm(f => ({
+                            ...f,
+                            workflowId: e.target.value
+                          }))
+                        }
+                      >
+                        <option value="">— Select workflow —</option>
+                        {workflows.map(w => (
+                          <option key={w.id} value={w.id}>
+                            {w.name}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      s.workflow?.Name || "-"
+                    )}
+                  </td>
+
                   <td>
                     {editing ? (
                       <select
@@ -391,7 +421,7 @@ export default function Steps() {
 
                 {expandable && open && (
                   <tr className="inner-row">
-                    <td colSpan={7}>
+                    <td colSpan={8}>
                       <div className="editor">
                         <label>Prompt</label>
                         {editing ? (
@@ -412,7 +442,7 @@ export default function Steps() {
                     </td>
                   </tr>
                 )}
-              </>
+              </Fragment>
             )
           })}
         </tbody>
