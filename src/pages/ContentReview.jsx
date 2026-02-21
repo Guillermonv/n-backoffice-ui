@@ -16,9 +16,6 @@ const formatDate = d => {
   return new Date(d).toLocaleDateString()
 }
 
-/* ==========================
-   Reusable Resizable Header
-========================== */
 const ResizableTH = ({
   children,
   columnKey,
@@ -72,8 +69,6 @@ export default function Content() {
   const [editingId, setEditingId] = useState(null)
   const [editForm, setEditForm] = useState({})
   const [loading, setLoading] = useState(true)
-
-  /* 👇 column widths state (no persistence) */
   const [widths, setWidths] = useState({})
 
   const defaultWidths = {
@@ -96,7 +91,8 @@ export default function Content() {
     const res = await fetch(`${API}/content-reviews`, {
       headers: { Authorization: `Bearer ${TOKEN}` },
     })
-    setRows(await res.json())
+    const data = await res.json()
+    setRows(data)
     setLoading(false)
   }
 
@@ -105,7 +101,18 @@ export default function Content() {
 
   const startEdit = row => {
     setEditingId(row.id)
-    setEditForm({ ...row })
+    setEditForm({
+      title: row.title || "",
+      short_description: row.short_description || "",
+      message: row.message || "",
+      status: row.status || "",
+      type: row.type || "",
+      sub_type: row.sub_type || "",
+      category: row.category || "",
+      sub_category: row.sub_category || "",
+      image_url: row.image_url || "",
+      image_prompt: row.image_prompt || "",
+    })
   }
 
   const cancelEdit = () => {
@@ -113,22 +120,40 @@ export default function Content() {
     setEditForm({})
   }
 
+  const handleChange = (field, value) => {
+    setEditForm(prev => ({ ...prev, [field]: value }))
+  }
+
   const saveEdit = async id => {
-    await fetch(`${API}/n/${id}`, {
-      method: "PUT",
-      headers: {
-        Authorization: `Bearer ${TOKEN}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(editForm),
-    })
-    await load()
-    setEditingId(null)
+    try {
+      const res = await fetch(`${API}/content-reviews/${id}`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${TOKEN}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(editForm),
+      })
+
+      if (!res.ok) throw new Error("Failed to update")
+
+      const updated = await res.json()
+
+      // Update optimista sin reload completo
+      setRows(prev =>
+        prev.map(r => (r.id === id ? updated : r))
+      )
+
+      setEditingId(null)
+    } catch (err) {
+      alert("Error updating item")
+      console.error(err)
+    }
   }
 
   const deleteRow = async id => {
     if (!window.confirm("Delete this item?")) return
-    await fetch(`${API}/n/${id}`, {
+    await fetch(`${API}/content-reviews/${id}`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${TOKEN}` },
     })
@@ -173,19 +198,19 @@ export default function Content() {
                       </button>
                     </td>
 
-                    <td style={{ width: widths.id || defaultWidths.id }}>{row.id}</td>
-                    <td style={{ width: widths.execution || defaultWidths.execution }}>{row.execution_id}</td>
-                    <td style={{ width: widths.title || defaultWidths.title }}>{row.title}</td>
-                    <td style={{ width: widths.status || defaultWidths.status }}>
+                    <td>{row.id}</td>
+                    <td>{row.execution_id}</td>
+                    <td>{row.title}</td>
+                    <td>
                       <span className={statusClass(row.status)}>
                         {row.status || "PENDING"}
                       </span>
                     </td>
-                    <td style={{ width: widths.type || defaultWidths.type }}>{row.type || "—"}</td>
-                    <td style={{ width: widths.category || defaultWidths.category }}>{row.category || "—"}</td>
-                    <td style={{ width: widths.created || defaultWidths.created }}>{formatDate(row.created)}</td>
+                    <td>{row.type || "—"}</td>
+                    <td>{row.category || "—"}</td>
+                    <td>{formatDate(row.created)}</td>
 
-                    <td style={{ width: widths.actions || defaultWidths.actions }} className="col-order">
+                    <td>
                       {!editing ? (
                         <>
                           <button className="btn-icon" onClick={() => startEdit(row)}>✏️</button>
@@ -212,7 +237,36 @@ export default function Content() {
                           </>
                         ) : (
                           <div className="editor">
-                            {/* editor igual que antes */}
+                            <input
+                              value={editForm.title}
+                              onChange={e => handleChange("title", e.target.value)}
+                              placeholder="Title"
+                            />
+                            <input
+                              value={editForm.short_description}
+                              onChange={e => handleChange("short_description", e.target.value)}
+                              placeholder="Short Description"
+                            />
+                            <textarea
+                              value={editForm.message}
+                              onChange={e => handleChange("message", e.target.value)}
+                              placeholder="Message"
+                            />
+                            <input
+                              value={editForm.status}
+                              onChange={e => handleChange("status", e.target.value)}
+                              placeholder="Status"
+                            />
+                            <input
+                              value={editForm.type}
+                              onChange={e => handleChange("type", e.target.value)}
+                              placeholder="Type"
+                            />
+                            <input
+                              value={editForm.category}
+                              onChange={e => handleChange("category", e.target.value)}
+                              placeholder="Category"
+                            />
                           </div>
                         )}
                       </td>

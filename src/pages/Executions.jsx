@@ -12,15 +12,15 @@ const statusClass = status => {
 }
 
 /* =====================
+   ICONS
+====================== */
+const ExpandAllIcon = () => <span style={{ fontSize: 18 }}>⤵</span>
+const CollapseAllIcon = () => <span style={{ fontSize: 18 }}>⤴</span>
+
+/* =====================
    Resizable TH
 ====================== */
-const ResizableTH = ({
-  children,
-  columnKey,
-  widths,
-  setWidths,
-  defaultWidth
-}) => {
+const ResizableTH = ({ children, columnKey, widths, setWidths, defaultWidth }) => {
   const ref = useRef(null)
 
   const startResize = e => {
@@ -50,10 +50,7 @@ const ResizableTH = ({
   return (
     <th
       ref={ref}
-      style={{
-        width: widths[columnKey] || defaultWidth,
-        minWidth: 80
-      }}
+      style={{ width: widths[columnKey] || defaultWidth, minWidth: 80 }}
     >
       {children}
       <div className="col-resizer" onMouseDown={startResize} />
@@ -65,10 +62,18 @@ export default function Execution() {
   const [executions, setExecutions] = useState([])
   const [expanded, setExpanded] = useState({})
   const [expandedOutput, setExpandedOutput] = useState({})
+  const [activeRow, setActiveRow] = useState(null)
 
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [totalPages, setTotalPages] = useState(1)
+
+  const [statusFilter, setStatusFilter] = useState("")
+  const [workflowFilter, setWorkflowFilter] = useState("")
+  const [workflows, setWorkflows] = useState([])
+
+  const [fromDate, setFromDate] = useState("")
+  const [toDate, setToDate] = useState("")
 
   const [mainWidths, setMainWidths] = useState({})
   const [nestedWidths, setNestedWidths] = useState({})
@@ -94,10 +99,42 @@ export default function Execution() {
   const toggleOutput = id =>
     setExpandedOutput(o => ({ ...o, [id]: !o[id] }))
 
+  const expandAll = () => {
+    const all = {}
+    executions.forEach(e => {
+      all[e.execution.id] = true
+    })
+    setExpanded(all)
+  }
+
+  const collapseAll = () => setExpanded({})
+
+  /* ================= LOAD DATA ================= */
+
+  const loadWorkflows = async () => {
+    const res = await fetch(`${API}/workflows`, {
+      headers: { Authorization: `Bearer ${TOKEN}` }
+    })
+    const json = await res.json()
+    setWorkflows(json)
+  }
+
   const load = async () => {
     const params = new URLSearchParams()
     params.append("page", page)
     params.append("pageSize", pageSize)
+
+    if (statusFilter) params.append("status", statusFilter)
+    if (workflowFilter) params.append("workflowId", workflowFilter)
+
+    if (fromDate)
+      params.append("from", new Date(fromDate).toISOString())
+
+    if (toDate) {
+      const d = new Date(toDate)
+      d.setHours(23, 59, 59)
+      params.append("to", d.toISOString())
+    }
 
     const res = await fetch(
       `${API}/step-executions-grouped?${params.toString()}`,
@@ -109,9 +146,8 @@ export default function Execution() {
     setTotalPages(json.pagination?.totalPages || 1)
   }
 
-  useEffect(() => {
-    load()
-  }, [page, pageSize])
+  useEffect(() => { loadWorkflows() }, [])
+  useEffect(() => { load() }, [page, pageSize, statusFilter, workflowFilter, fromDate, toDate])
 
   const goFirst = () => setPage(1)
   const goPrev = () => setPage(p => Math.max(1, p - 1))
@@ -122,37 +158,111 @@ export default function Execution() {
     <div className="steps-page">
       <h1>Executions</h1>
 
-      {/* ===================== PAGINATION (RIGHT / HORIZONTAL) ===================== */}
+      {/* ================= HEADER ================= */}
       <div className="steps-header">
+
+        {/* LEFT SIDE */}
+        <div className="steps-header-left">
+
+          {/* ICONS ONLY */}
+          <div className="header-group">
+            <button className="btn-icon-action" onClick={expandAll}>
+              <ExpandAllIcon />
+            </button>
+            <button className="btn-icon-action" onClick={collapseAll}>
+              <CollapseAllIcon />
+            </button>
+          </div>
+
+          {/* DATES */}
+          <div className="header-group">
+            <input
+              type="date"
+              className="filter-input"
+              value={fromDate}
+              onChange={e => { setFromDate(e.target.value); setPage(1) }}
+            />
+            <input
+              type="date"
+              className="filter-input"
+              value={toDate}
+              onChange={e => { setToDate(e.target.value); setPage(1) }}
+            />
+          </div>
+
+          {/* FILTERS */}
+          <div className="header-group">
+
+            <select
+              className="select-primary"
+              value={statusFilter}
+              onChange={e => { setStatusFilter(e.target.value); setPage(1) }}
+            >
+              <option value="">All Status</option>
+              <option value="DONE">DONE</option>
+              <option value="ERROR">ERROR</option>
+              <option value="MANUAL_REVIEW">MANUAL REVIEW</option>
+            </select>
+
+            <select
+              className="select-primary"
+              value={workflowFilter}
+              onChange={e => { setWorkflowFilter(e.target.value); setPage(1) }}
+            >
+              <option value="">All Workflows</option>
+              {workflows.map(w => (
+                <option key={w.ID} value={w.ID}>
+                  {w.Name}
+                </option>
+              ))}
+            </select>
+
+
+
+          </div>
+        </div>
+
+        {/* RIGHT SIDE PAGINATION */}
         <div className="pagination-box">
-
-          <button className="btn-primary" onClick={goFirst} disabled={page === 1}>⏮</button>
-          <button className="btn-primary" onClick={goPrev} disabled={page === 1}>⏪</button>
-
-          <span className="page-info">
-            Page <strong>{page}</strong> of <strong>{totalPages}</strong>
-          </span>
-
-          <button className="btn-primary" onClick={goNext} disabled={page === totalPages}>⏩</button>
-          <button className="btn-primary" onClick={goLast} disabled={page === totalPages}>⏭</button>
-
-          <select
-            className="select-primary"
+                      {/* SMALL DROPDOWN */}
+                      <select
             value={pageSize}
             onChange={e => {
               setPageSize(Number(e.target.value))
               setPage(1)
             }}
+            style={{
+              width: 60,
+              height: 32,
+              minWidth: 60,
+              maxWidth: 60,
+              padding: "4px 6px",
+              fontSize: 13,
+              boxSizing: "border-box",
+              appearance: "none",
+              WebkitAppearance: "none",
+              MozAppearance: "none",
+              textAlign: "center"
+            }}
           >
             <option value={10}>10</option>
-            <option value={20}>20</option>
+            <option value={50}>50</option>
             <option value={100}>100</option>
           </select>
+
+          <button className="btn-primary" onClick={goFirst} disabled={page === 1}>«</button>
+<button className="btn-primary" onClick={goPrev} disabled={page === 1}>‹</button>
+<button className="btn-primary" onClick={goNext} disabled={page === totalPages}>›</button>
+<button className="btn-primary" onClick={goLast} disabled={page === totalPages}>»</button>
+          {/* TOTAL PAGES FAR RIGHT */}
+          <span className="page-info" style={{ marginLeft: 16 }}>
+            {page} / {totalPages}
+          </span>
 
         </div>
       </div>
 
-      {/* ================= MAIN TABLE ================= */}
+      {/* ================= TABLE ================= */}
       <table className="table">
         <thead>
           <tr>
@@ -172,27 +282,27 @@ export default function Execution() {
 
             return (
               <React.Fragment key={exec.id}>
-                <tr>
+                <tr
+                  className={activeRow === exec.id ? "active" : ""}
+                  onClick={() => setActiveRow(exec.id)}
+                >
                   <td>
-                    <button className="btn-icon" onClick={() => toggle(exec.id)}>
+                    <button onClick={() => toggle(exec.id)}>
                       {open ? "▾" : "▸"}
                     </button>
                   </td>
-
-                  <td style={{ width: mainWidths.execution || defaultMain.execution }}>{exec.id}</td>
-                  <td style={{ width: mainWidths.status || defaultMain.status }}>
+                  <td>{exec.id}</td>
+                  <td>
                     <span className={statusClass(exec.status)}>
                       {exec.status}
                     </span>
                   </td>
-                  <td style={{ width: mainWidths.workflow || defaultMain.workflow }}>
-                    {exec.workflow?.name}
-                  </td>
-                  <td style={{ width: mainWidths.description || defaultMain.description }}>
-                    {exec.workflow?.description}
-                  </td>
-                  <td style={{ width: mainWidths.created || defaultMain.created }}>
-                    {e.created_at ? new Date(e.created_at).toLocaleString() : "-"}
+                  <td>{exec.workflow?.name}</td>
+                  <td>{exec.workflow?.description}</td>
+                  <td>
+                    {e.created_at
+                      ? new Date(e.created_at).toLocaleString()
+                      : "-"}
                   </td>
                 </tr>
 
@@ -211,14 +321,14 @@ export default function Execution() {
                         <tbody>
                           {e.steps?.map(s => (
                             <tr key={s.id}>
-                              <td style={{ width: nestedWidths.stepid || defaultNested.stepid }}>{s.step_id}</td>
-                              <td style={{ width: nestedWidths.name || defaultNested.name }}>{s.step?.Name}</td>
-                              <td style={{ width: nestedWidths.status || defaultNested.status }}>
+                              <td>{s.step_id}</td>
+                              <td>{s.step?.Name}</td>
+                              <td>
                                 <span className={statusClass(s.status)}>
                                   {s.status}
                                 </span>
                               </td>
-                              <td style={{ width: nestedWidths.output || defaultNested.output }}>
+                              <td>
                                 <pre
                                   style={{ cursor: "pointer" }}
                                   onClick={() => toggleOutput(s.id)}
