@@ -166,29 +166,14 @@ export default function Execution() {
 
           {/* ICONS ONLY */}
           <div className="header-group">
-            <button className="btn-icon-action" onClick={expandAll}>
+            <button className="btn-expand" onClick={expandAll}>
               <ExpandAllIcon />
             </button>
-            <button className="btn-icon-action" onClick={collapseAll}>
+            <button className="btn-expand" onClick={collapseAll}>
               <CollapseAllIcon />
             </button>
           </div>
 
-          {/* DATES */}
-          <div className="header-group">
-            <input
-              type="date"
-              className="filter-input"
-              value={fromDate}
-              onChange={e => { setFromDate(e.target.value); setPage(1) }}
-            />
-            <input
-              type="date"
-              className="filter-input"
-              value={toDate}
-              onChange={e => { setToDate(e.target.value); setPage(1) }}
-            />
-          </div>
 
           {/* FILTERS */}
           <div className="header-group">
@@ -224,6 +209,21 @@ export default function Execution() {
 
         {/* RIGHT SIDE PAGINATION */}
         <div className="pagination-box">
+        <div className="header-group">
+         {/* DATES */}
+            <input
+              type="date"
+              className="filter-input"
+              value={fromDate}
+              onChange={e => { setFromDate(e.target.value); setPage(1) }}
+            />
+            <input
+              type="date"
+              className="filter-input"
+              value={toDate}
+              onChange={e => { setToDate(e.target.value); setPage(1) }}
+            />
+          </div>
                       {/* SMALL DROPDOWN */}
                       <select
             value={pageSize}
@@ -287,7 +287,7 @@ export default function Execution() {
                   onClick={() => setActiveRow(exec.id)}
                 >
                   <td>
-                    <button onClick={() => toggle(exec.id)}>
+                    <button className="btn-expand" onClick={() => toggle(exec.id)}>
                       {open ? "▾" : "▸"}
                     </button>
                   </td>
