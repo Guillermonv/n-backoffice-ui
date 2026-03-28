@@ -24,7 +24,6 @@ export default function App() {
           <Route path="/contentReview" element={<ContentReview />} />
         </Routes>
       </main>
-      Guille
     </div>
   )
 }

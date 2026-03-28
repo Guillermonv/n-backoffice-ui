@@ -6,7 +6,7 @@ const TOKEN = import.meta.env.VITE_API_TOKEN
 const statusClass = status => {
   if (!status) return "status status-yellow"
   const s = status.toLowerCase()
-  if (["error", "failed"].includes(s)) return "status status-red"
+  if (["error", "failed", "cancelled"].includes(s)) return "status status-red"
   if (["done", "success", "approved"].includes(s)) return "status status-green"
   return "status status-yellow"
 }
@@ -84,7 +84,10 @@ export default function Content() {
 
     const json = await res.json()
 
-    setRows(json.data || [])
+    setRows(prev => {
+      const prevMap = new Map(prev.map(r => [r.id, r]))
+      return (json.data || []).map(r => ({ ...prevMap.get(r.id), ...r }))
+    })
     setTotalPages(json.pagination?.totalPages || 1)
     setLoading(false)
   }
@@ -115,7 +118,7 @@ export default function Content() {
     setEditForm(prev => ({ ...prev, [field]: value }))
 
   const saveEdit = async id => {
-    const res = await fetch(`${API}/content-reviews/${id}`, {
+    await fetch(`${API}/content-reviews/${id}`, {
       method: "PUT",
       headers: {
         Authorization: `Bearer ${TOKEN}`,
@@ -124,23 +127,20 @@ export default function Content() {
       body: JSON.stringify(editForm)
     })
 
-    const updated = await res.json()
-    setRows(prev => prev.map(r => (r.id === id ? updated : r)))
+    setRows(prev => prev.map(r => (r.id === id ? { ...r, ...editForm } : r)))
     setEditingId(null)
   }
 
-  const markAsDone = async id => {
-    const res = await fetch(`${API}/content-reviews/${id}`, {
+  const updateStatus = async (row, status) => {
+    await fetch(`${API}/content-reviews/${row.id}`, {
       method: "PUT",
       headers: {
         Authorization: `Bearer ${TOKEN}`,
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({ status: "DONE" })
+      body: JSON.stringify({ ...row, status })
     })
-
-    const updated = await res.json()
-    setRows(prev => prev.map(r => (r.id === id ? updated : r)))
+    setRows(prev => prev.map(r => (r.id === row.id ? { ...r, status } : r)))
   }
 
   const deleteRow = async id => {
@@ -176,6 +176,7 @@ export default function Content() {
               <option value="DONE">DONE</option>
               <option value="ERROR">ERROR</option>
               <option value="PENDING">PENDING</option>
+              <option value="CANCELLED">CANCELLED</option>
             </select>
 
             <input
@@ -277,7 +278,10 @@ export default function Content() {
                       {!editing ? (
                         <>
                           {row.status !== "DONE" && (
-                            <button className="btn-icon success" onClick={() => markAsDone(row.id)}>✅</button>
+                            <button className="btn-icon success" onClick={() => updateStatus(row, "DONE")}>✅</button>
+                          )}
+                          {row.status === "DONE" && (
+                            <button className="btn-icon danger" onClick={() => updateStatus(row, "CANCELLED")}>🚫</button>
                           )}
                           <button className="btn-icon" onClick={() => startEdit(row)}>✏️</button>
                           <button className="btn-icon danger" onClick={() => deleteRow(row.id)}>🗑️</button>
