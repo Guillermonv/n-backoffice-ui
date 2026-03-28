@@ -142,10 +142,47 @@ To regenerate them, run `npm run dev` and execute:
 ```bash
 CHROME="/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 OUT="docs/screenshots"
-for page in workflows agents steps executions; do
+
+for item in \
+  "workflows:http://localhost:5173/workflows" \
+  "agents:http://localhost:5173/agents" \
+  "steps:http://localhost:5173/steps" \
+  "executions:http://localhost:5173/executions" \
+  "content-review:http://localhost:5173/contentReview"
+do
+  name="${item%%:*}"
+  url="${item#*:}"
   "$CHROME" --headless --disable-gpu --window-size=1440,900 \
-    --screenshot="$OUT/$page.png" "http://localhost:5173/$page"
+    --virtual-time-budget=3000 \
+    --screenshot="$OUT/${name}.png" "$url" 2>/dev/null
 done
-"$CHROME" --headless --disable-gpu --window-size=1440,900 \
-  --screenshot="$OUT/content-review.png" "http://localhost:5173/contentReview"
+```
+
+Then auto-crop each image to remove empty background space below the last content row:
+
+```python
+# python3 scripts/crop-screenshots.py
+from PIL import Image
+import os
+
+OUT = "docs/screenshots"
+BG = (241, 245, 249)     # --bg: #f1f5f9
+IGNORE = {BG, (255, 255, 255), (248, 250, 252), (30, 41, 59), (15, 23, 42)}
+PADDING = 32
+
+for fname in os.listdir(OUT):
+    if not fname.endswith(".png"):
+        continue
+    path = os.path.join(OUT, fname)
+    img = Image.open(path).convert("RGB")
+    w, h = img.size
+    pixels = img.load()
+    last_content_row = 0
+    for y in range(h - 1, -1, -1):
+        if set(pixels[x, y] for x in range(w)) - IGNORE:
+            last_content_row = y
+            break
+    cropped = img.crop((0, 0, w, min(last_content_row + PADDING, h)))
+    cropped.save(path)
+    print(f"{fname}: {h}px → {cropped.height}px")
 ```
