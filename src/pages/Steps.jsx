@@ -1,7 +1,7 @@
 import { useEffect, useState, Fragment } from "react"
 
 const API = import.meta.env.VITE_API_BASE_URL
-const TOKEN = import.meta.env.VITE_API_TOKEN
+const getToken = () => localStorage.getItem("token")
 
 const startResize = (th) => (e) => {
   e.preventDefault()
@@ -51,14 +51,14 @@ export default function Steps() {
 
   const loadSteps = async () => {
     const res = await fetch(`${API}/steps`, {
-      headers: { Authorization: `Bearer ${TOKEN}` }
+      headers: { Authorization: `Bearer ${getToken()}` }
     })
     setSteps(await res.json())
   }
 
   const loadAgents = async () => {
     const res = await fetch(`${API}/agents`, {
-      headers: { Authorization: `Bearer ${TOKEN}` }
+      headers: { Authorization: `Bearer ${getToken()}` }
     })
     const data = await res.json()
 
@@ -72,7 +72,7 @@ export default function Steps() {
 
   const loadWorkflows = async () => {
     const res = await fetch(`${API}/workflows`, {
-      headers: { Authorization: `Bearer ${TOKEN}` }
+      headers: { Authorization: `Bearer ${getToken()}` }
     })
     const data = await res.json()
 
@@ -133,7 +133,7 @@ export default function Steps() {
     await fetch(`${API}/steps/${editForm.id}`, {
       method: "PUT",
       headers: {
-        Authorization: `Bearer ${TOKEN}`,
+        Authorization: `Bearer ${getToken()}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
@@ -155,7 +155,7 @@ export default function Steps() {
     await fetch(`${API}/steps`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${TOKEN}`,
+        Authorization: `Bearer ${getToken()}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
@@ -188,7 +188,7 @@ export default function Steps() {
 
     await fetch(`${API}/steps/${id}`, {
       method: "DELETE",
-      headers: { Authorization: `Bearer ${TOKEN}` }
+      headers: { Authorization: `Bearer ${getToken()}` }
     })
 
     loadSteps()

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { NavLink } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 
 function Icon({ d, d2 }) {
   return (
@@ -39,6 +40,7 @@ const NAV = [
 
 export default function Sidebar() {
   const [collapsed, setCollapsed] = useState(false)
+  const { logout } = useAuth()
 
   return (
     <aside className={`sidebar${collapsed ? ' sidebar-collapsed' : ''}`}>
@@ -69,6 +71,21 @@ export default function Sidebar() {
           </NavLink>
         ))}
       </nav>
+
+      <div className="sidebar-footer">
+        <button
+          className="sidebar-link sidebar-logout"
+          onClick={logout}
+          title={collapsed ? 'Sign out' : undefined}
+        >
+          <span className="sidebar-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+          </span>
+          {!collapsed && <span className="sidebar-label">Sign out</span>}
+        </button>
+      </div>
     </aside>
   )
 }

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react"
 
 const API = import.meta.env.VITE_API_BASE_URL
-const TOKEN = import.meta.env.VITE_API_TOKEN
+const getToken = () => localStorage.getItem("token")
 
 const statusClass = status => {
   if (!status) return "status status-yellow"
@@ -81,7 +81,7 @@ export default function Execution() {
 
   const loadWorkflows = async () => {
     const res = await fetch(`${API}/workflows`, {
-      headers: { Authorization: `Bearer ${TOKEN}` }
+      headers: { Authorization: `Bearer ${getToken()}` }
     })
     const json = await res.json()
     setWorkflows(json)
@@ -107,7 +107,7 @@ export default function Execution() {
 
     const res = await fetch(
       `${API}/step-executions-grouped?${params.toString()}`,
-      { headers: { Authorization: `Bearer ${TOKEN}` } }
+      { headers: { Authorization: `Bearer ${getToken()}` } }
     )
 
     const json = await res.json()

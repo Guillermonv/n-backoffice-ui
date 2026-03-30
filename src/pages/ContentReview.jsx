@@ -1,7 +1,7 @@
 import React, { useEffect, useState, Fragment } from "react"
 
 const API = import.meta.env.VITE_API_BASE_URL
-const TOKEN = import.meta.env.VITE_API_TOKEN
+const getToken = () => localStorage.getItem("token")
 
 const statusClass = status => {
   if (!status) return "status status-yellow"
@@ -79,7 +79,7 @@ export default function Content() {
 
     const res = await fetch(
       `${API}/content-reviews?${params.toString()}`,
-      { headers: { Authorization: `Bearer ${TOKEN}` } }
+      { headers: { Authorization: `Bearer ${getToken()}` } }
     )
 
     const json = await res.json()
@@ -121,7 +121,7 @@ export default function Content() {
     await fetch(`${API}/content-reviews/${id}`, {
       method: "PUT",
       headers: {
-        Authorization: `Bearer ${TOKEN}`,
+        Authorization: `Bearer ${getToken()}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify(editForm)
@@ -135,7 +135,7 @@ export default function Content() {
     await fetch(`${API}/content-reviews/${row.id}`, {
       method: "PUT",
       headers: {
-        Authorization: `Bearer ${TOKEN}`,
+        Authorization: `Bearer ${getToken()}`,
         "Content-Type": "application/json"
       },
       body: JSON.stringify({ ...row, status })
@@ -147,7 +147,7 @@ export default function Content() {
     if (!window.confirm("Delete this item?")) return
     await fetch(`${API}/content-reviews/${id}`, {
       method: "DELETE",
-      headers: { Authorization: `Bearer ${TOKEN}` }
+      headers: { Authorization: `Bearer ${getToken()}` }
     })
     setRows(r => r.filter(x => x.id !== id))
   }

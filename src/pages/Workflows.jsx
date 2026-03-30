@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
-const API_TOKEN = import.meta.env.VITE_API_TOKEN
+const getToken = () => localStorage.getItem("token")
 
 // ======================
 // Column resize helper
@@ -57,7 +57,7 @@ export default function Workflows() {
   const loadWorkflows = async () => {
     const res = await fetch(`${API_BASE_URL}/workflows`, {
       headers: {
-        Authorization: `Bearer ${API_TOKEN}`,
+        Authorization: `Bearer ${getToken()}`,
       },
     })
     setWorkflows(await res.json())
@@ -79,7 +79,7 @@ export default function Workflows() {
     await fetch(`${API_BASE_URL}/workflows/${w.ID}/enabled`, {
       method: "PATCH",
       headers: {
-        Authorization: `Bearer ${API_TOKEN}`,
+        Authorization: `Bearer ${getToken()}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -106,7 +106,7 @@ export default function Workflows() {
     await fetch(`${API_BASE_URL}/workflows/${id}`, {
       method: "PUT",
       headers: {
-        Authorization: `Bearer ${API_TOKEN}`,
+        Authorization: `Bearer ${getToken()}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -136,7 +136,7 @@ export default function Workflows() {
     await fetch(`${API_BASE_URL}/workflows`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${API_TOKEN}`,
+        Authorization: `Bearer ${getToken()}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(createForm),
@@ -156,7 +156,7 @@ export default function Workflows() {
     await fetch(`${API_BASE_URL}/workflows/${id}`, {
       method: "DELETE",
       headers: {
-        Authorization: `Bearer ${API_TOKEN}`,
+        Authorization: `Bearer ${getToken()}`,
       },
     })
 

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
-const API_TOKEN = import.meta.env.VITE_API_TOKEN
+const getToken = () => localStorage.getItem("token")
 
 const startResize = (th) => (e) => {
   e.preventDefault()
@@ -51,7 +51,7 @@ export default function Agents() {
   const loadAgents = async () => {
     const res = await fetch(`${API_BASE_URL}/agents`, {
       headers: {
-        Authorization: `Bearer ${API_TOKEN}`,
+        Authorization: `Bearer ${getToken()}`,
       },
     })
     setAgents(await res.json())
@@ -76,7 +76,7 @@ export default function Agents() {
     await fetch(`${API_BASE_URL}/agents/${id}`, {
       method: "PUT",
       headers: {
-        Authorization: `Bearer ${API_TOKEN}`,
+        Authorization: `Bearer ${getToken()}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -107,7 +107,7 @@ export default function Agents() {
     await fetch(`${API_BASE_URL}/agents`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${API_TOKEN}`,
+        Authorization: `Bearer ${getToken()}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
@@ -130,7 +130,7 @@ export default function Agents() {
     await fetch(`${API_BASE_URL}/agents/${id}`, {
       method: "DELETE",
       headers: {
-        Authorization: `Bearer ${API_TOKEN}`,
+        Authorization: `Bearer ${getToken()}`,
       },
     })
 
