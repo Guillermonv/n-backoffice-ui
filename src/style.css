@@ -743,3 +743,107 @@ h1 {
   opacity: 0.6;
   cursor: not-allowed;
 }
+
+/* ======================
+   Manual form
+====================== */
+.manual-form {
+  background: var(--white);
+  border-radius: 10px;
+  padding: 1.75rem;
+  box-shadow: var(--shadow);
+  max-width: 900px;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem 1.5rem;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.form-field-full {
+  grid-column: 1 / -1;
+}
+
+.form-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.form-label .required {
+  color: var(--red);
+}
+
+.form-input {
+  padding: 0.45rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  font-family: inherit;
+  font-size: 0.875rem;
+  color: var(--text);
+  background: var(--bg);
+  transition: border-color var(--transition), background var(--transition);
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: var(--primary);
+  background: var(--white);
+}
+
+.form-textarea {
+  resize: vertical;
+  min-height: 200px;
+  line-height: 1.6;
+}
+
+.form-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 1.5rem;
+}
+
+.btn-submit {
+  background: var(--primary);
+  color: var(--white);
+  border-color: var(--primary);
+  height: 36px;
+  padding: 0 20px;
+  font-size: 0.875rem;
+}
+
+.btn-submit:hover {
+  background: var(--primary-hover);
+  color: var(--white);
+}
+
+.alert {
+  padding: 10px 14px;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 500;
+  margin-bottom: 1rem;
+}
+
+.alert-error {
+  background: var(--red-light);
+  color: var(--red-text);
+  border: 1px solid #fecaca;
+}
+
+.alert-success {
+  background: var(--green-light);
+  color: var(--green-text);
+  border: 1px solid #bbf7d0;
+}

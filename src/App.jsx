@@ -8,6 +8,7 @@ import Agents from './pages/Agents'
 import Workflows from './pages/Workflows'
 import Executions from './pages/Executions'
 import ContentReview from './pages/ContentReview'
+import AddManualContent from './pages/AddManualContent'
 
 function Layout() {
   return (
@@ -21,6 +22,7 @@ function Layout() {
           <Route path="/workflows" element={<Workflows />} />
           <Route path="/executions" element={<Executions />} />
           <Route path="/contentReview" element={<ContentReview />} />
+          <Route path="/addManualContent" element={<AddManualContent />} />
         </Routes>
       </main>
     </div>
